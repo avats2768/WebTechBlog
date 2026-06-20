@@ -13,10 +13,11 @@ export default function Register() {
   const dispatch = useDispatch();
 
   const [form, setForm] = useState({
-    username: "",
-    email: "",
-    password: "",
-  });
+  username: "",
+  email: "",
+  password: "",
+  role: "USER",
+});
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -105,6 +106,34 @@ export default function Register() {
           value={form.password}
           onChange={handleChange}
         />
+
+        <div style={{ marginBottom: 16 }}>
+  <label
+    style={{
+      display: "block",
+      marginBottom: 6,
+      fontWeight: 500,
+    }}
+  >
+    Role
+  </label>
+
+  <select
+    name="role"
+    value={form.role}
+    onChange={handleChange}
+    className="input"
+    style={{
+      width: "100%",
+      padding: "12px",
+      border: "1px solid #ddd",
+      borderRadius: "8px",
+    }}
+  >
+    <option value="USER">User</option>
+    <option value="ADMIN">Admin</option>
+  </select>
+</div>
 
         <button type="submit" disabled={loading} className="btn btn-primary w-full" style={{ marginTop: 8 }}>
           {loading ? "Creating…" : "Register"}

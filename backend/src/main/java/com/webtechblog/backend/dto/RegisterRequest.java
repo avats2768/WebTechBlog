@@ -1,5 +1,6 @@
 package com.webtechblog.backend.dto;
 
+import com.webtechblog.backend.entity.RoleEntity;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
@@ -12,6 +13,9 @@ public record RegisterRequest(
         String email,
 
         @NotBlank
-        String password
+        String password,
+
+        RoleEntity role
 
 ) {}
+

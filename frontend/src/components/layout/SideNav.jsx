@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import AppLogo from "../../assets/logo/app-logo.svg";
 import {
   Home,
   Compass,
@@ -82,12 +83,11 @@ export default function SideNav() {
         className="flex items-center gap-2 mb-6 cursor-pointer"
         onClick={() => navigate("/dashboard")}
       >
-        <div
-          className="w-9 h-9 flex items-center justify-center font-bold"
-          style={{ borderRadius: "var(--radius-md)", backgroundColor: "var(--primary)", color: "var(--on-primary)" }}
-        >
-          TS
-        </div>
+        <img
+    src={AppLogo}
+    alt="App Logo"
+    className="w-10 h-10 object-contain"
+  />
         <span className="heading-md">TechSocial</span>
       </div>
 

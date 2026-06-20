@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getAllPosts } from "../../api/postsApi";
 import { useSelector } from "react-redux";
-import { Heart, MessageCircle, Bookmark, MoreHorizontal, Hash, Video, X, Plus } from "lucide-react";
+import { Video, X, Plus, Hash } from "lucide-react";
 
 import HomeLayout from "../../layouts/HomeLayout";
+import PostCard from "../../components/PostCard";
 
-// ---- dummy data, swap with real API data later ----
+// ---- dummy sidebar data, swap with real API data later ----
 const stories = [
   { id: 1, label: "React", color: "bg-cyan-100 text-cyan-600", members: "145k members" },
   { id: 2, label: "JS", color: "bg-yellow-400 text-white", members: "198k members" },
@@ -12,35 +14,6 @@ const stories = [
   { id: 4, label: "DevOps", color: "bg-blue-100 text-blue-600", members: "112k members" },
   { id: 5, label: "Py", color: "bg-blue-500 text-white", members: "159k members" },
   { id: 6, label: "TS", color: "bg-sky-500 text-white", members: "101k members" },
-];
-
-const posts = [
-  {
-    id: 1,
-    author: "Alex Johnson",
-    role: "Senior Developer",
-    time: "2h ago",
-    title: "Building a Real-time Chat App with Next.js 14, Socket.io & TypeScript",
-    description:
-      "Learn how to build a production-ready real-time chat application using Next.js 14, Socket.io, TypeScript, and Tailwind CSS. This guide covers authentication, real-time...",
-    tags: ["Next.js", "TypeScript", "Socket.io", "Tailwind CSS"],
-    likes: 245,
-    comments: 32,
-    readTime: "5 min read",
-  },
-  {
-    id: 2,
-    author: "Sarah Wilson",
-    role: "Tech Writer",
-    time: "5h ago",
-    title: "Understanding System Design: A Beginner's Guide",
-    description:
-      "System design is an essential skill for any backend developer. In this article, we break down the fundamentals...",
-    tags: [],
-    likes: 189,
-    comments: 27,
-    readTime: "8 min read",
-  },
 ];
 
 const trendingTags = [
@@ -65,10 +38,51 @@ const communities = [
 
 const tabs = ["For you", "Following", "Trending"];
 
+function initials(name = "") {
+  return name
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
+}
+
 export default function Dashboard() {
   const user = useSelector((state) => state.auth.user);
   const [activeTab, setActiveTab] = useState("For you");
   const [showVideoCard, setShowVideoCard] = useState(true);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllPosts();
+      if (response.data?.success) {
+        setPosts(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch posts", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCodeClick = async (post) => {
+  try {
+    await navigator.clipboard.writeText(post.code ?? "");
+    console.log("Code copied to clipboard for", post.uuid);
+  } catch (error) {
+    console.error("Failed to copy code", error);
+  }
+};
+
+  const handleEditClick = (post) => {
+    console.log("Edit clicked for", post.uuid);
+  };
 
   return (
     <HomeLayout>
@@ -118,59 +132,22 @@ export default function Dashboard() {
           </div>
 
           {/* Posts */}
-          <div className="flex flex-col gap-5">
-            {posts.map((post) => (
-              <article key={post.id} className="card card-hover p-lg">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm"
-                      style={{ backgroundColor: "color-mix(in srgb, var(--primary) 14%, transparent)", color: "var(--primary)" }}
-                    >
-                      {post.author.split(" ").map((p) => p[0]).join("")}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{post.author}</p>
-                      <p className="body-sm">{post.role} · {post.time}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Bookmark size={17} className="cursor-pointer" style={{ color: "var(--text-secondary)" }} />
-                    <MoreHorizontal size={17} className="cursor-pointer" style={{ color: "var(--text-secondary)" }} />
-                  </div>
-                </div>
-
-                <h2 className="heading-md" style={{ marginBottom: 8 }}>{post.title}</h2>
-                <p className="body-md" style={{ marginBottom: 12 }}>{post.description}</p>
-
-                {post.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {post.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="badge"
-                        style={{ backgroundColor: "color-mix(in srgb, var(--primary) 12%, transparent)", color: "var(--primary)" }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between pt-3" style={{ borderTop: "1px solid var(--border)" }}>
-                  <div className="flex items-center gap-4 text-sm" style={{ color: "var(--text-secondary)" }}>
-                    <span className="flex items-center gap-1.5">
-                      <Heart size={16} style={{ color: "var(--danger)" }} /> {post.likes}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <MessageCircle size={16} /> {post.comments}
-                    </span>
-                  </div>
-                  <span className="body-sm">{post.readTime}</span>
-                </div>
-              </article>
-            ))}
-          </div>
+          {loading ? (
+            <p className="body-md">Loading posts...</p>
+          ) : posts.length === 0 ? (
+            <p className="body-md">No posts yet.</p>
+          ) : (
+            <div className="flex flex-col gap-5">
+              {posts.map((post) => (
+                <PostCard
+                  key={post.uuid}
+                  post={post}
+                  onCodeClick={handleCodeClick}
+                  onEditClick={handleEditClick}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Communities you might like */}
           <div className="mt-8">
@@ -231,7 +208,7 @@ export default function Dashboard() {
                       className="w-9 h-9 rounded-full flex items-center justify-center font-semibold text-xs"
                       style={{ backgroundColor: "color-mix(in srgb, var(--primary) 14%, transparent)", color: "var(--primary)" }}
                     >
-                      {a.name.split(" ").map((p) => p[0]).join("")}
+                      {initials(a.name)}
                     </div>
                     <div>
                       <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{a.name}</p>

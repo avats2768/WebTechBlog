@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import Select from "react-select";
 import { UploadCloud, X } from "lucide-react";
-
+import { createPost } from "../../api/postsApi";
 import { getSkills } from "../../api/choiceApis/skillApi";
 import HomeLayout from "../../layouts/HomeLayout";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext"; // adjust path if needed
 
 // Sentinel value for the "Other" skill option — must match what's pushed
@@ -24,6 +25,14 @@ export default function AddPost() {
     customSkill: "",
   });
   const [imagePreview, setImagePreview] = useState(null);
+
+  const [toast, setToast] = useState({
+  show: false,
+  message: "",
+  type: "success",
+});
+
+const navigate = useNavigate();
 
   useEffect(() => {
     fetchSkills();
@@ -58,6 +67,21 @@ export default function AddPost() {
     }));
   };
 
+  const showToast = (message, type = "success") => {
+  setToast({
+    show: true,
+    message,
+    type,
+  });
+
+  setTimeout(() => {
+    setToast((prev) => ({
+      ...prev,
+      show: false,
+    }));
+  }, 3000);
+};
+
   const handleImage = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -78,32 +102,66 @@ export default function AddPost() {
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const payload = new FormData();
+  const payload = new FormData();
 
-    payload.append("title", formData.title);
-    payload.append("description", formData.description);
-    payload.append("code", formData.code);
+  payload.append("title", formData.title);
+  payload.append("description", formData.description);
+  payload.append("code", formData.code);
 
-    if (formData.image) {
-      payload.append("image", formData.image);
-    }
+  if (formData.image) {
+    payload.append("image", formData.image);
+  }
 
-    // Send skill IDs
+  payload.append(
+    "skills",
+    JSON.stringify(
+      formData.skills.map((skill) => skill.value)
+    )
+  );
+
+  if (hasOtherSkill) {
     payload.append(
-      "skills",
-      JSON.stringify(formData.skills.map((skill) => skill.value))
+      "customSkill",
+      formData.customSkill
+    );
+  }
+
+  try {
+    const response = await createPost(payload);
+
+    showToast(
+      "Post created successfully",
+      "success"
     );
 
-    if (hasOtherSkill) {
-      payload.append("customSkill", formData.customSkill);
-    }
+    setTimeout(() => {
+      navigate("/");
+    }, 1500);
 
-    console.log("Skills IDs:", formData.skills.map((skill) => skill.value));
-    console.log([...payload.entries()]);
-  };
+} catch (error) {
+
+  if (error.response) {
+    showToast(
+      error.response.data?.message ||
+      "Failed to create post",
+      "danger"
+    );
+
+    console.log(error.response.data);
+  } else {
+    showToast(
+      error.message ||
+      "Network error",
+      "danger"
+    );
+  }
+
+  console.error(error);
+}
+};
 
   // react-select doesn't take className theming, so read the live CSS
   // variables here and pass them straight into its style objects
@@ -274,6 +332,23 @@ export default function AddPost() {
           </form>
         </div>
       </div>
+      {toast.show && (
+  <div
+    className={`toast ${
+      toast.type === "success"
+        ? "toast-success"
+        : "toast-danger"
+    }`}
+    style={{
+      position: "fixed",
+      bottom: 24,
+      right: 24,
+      zIndex: 9999,
+    }}
+  >
+    {toast.message}
+  </div>
+)}
     </HomeLayout>
   );
 }
