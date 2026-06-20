@@ -1,10 +1,23 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
+import React from "react";
+import ReactDOM from "react-dom/client";
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+import App from "./App";
+import "./index.css";
+import "./styles/theme.css"; // your design tokens + component classes
+import { Provider } from "react-redux";
+import { store } from "./app/store";
+
+import { BrowserRouter } from "react-router-dom";
+import { ThemeProvider } from "./context/ThemeContext"; // adjust path to wherever you saved this file
+
+ReactDOM.createRoot(
+  document.getElementById("root")
+).render(
+  <Provider store={store}>
+    <ThemeProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </ThemeProvider>
+  </Provider>
+);

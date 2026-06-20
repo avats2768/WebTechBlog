@@ -1,0 +1,67 @@
+<svg width="240" height="240" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="dev.feed app icon">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1C2230"/>
+      <stop offset="100%" stop-color="#08090D"/>
+    </linearGradient>
+    <linearGradient id="glyphGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCD34D"/>
+      <stop offset="100%" stop-color="#F97333"/>
+    </linearGradient>
+    <linearGradient id="liveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C084FC"/>
+      <stop offset="100%" stop-color="#EC4899"/>
+    </linearGradient>
+    <linearGradient id="rimGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="badgeClip">
+      <rect x="13" y="13" width="94" height="94" rx="26"/>
+    </clipPath>
+    <filter id="haloBlur" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
+    <filter id="dropShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <filter id="dotGlow" x="-150%" y="-150%" width="400%" height="400%">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+  </defs>
+
+  <!-- ambient halo glow behind the badge -->
+  <circle cx="60" cy="60" r="48" fill="url(#glyphGrad)" opacity="0.22" filter="url(#haloBlur)"/>
+
+  <!-- chat-bubble tail (sits behind the body so the seam disappears) -->
+  <path d="M29,103 L51,103 L33,119 Z" fill="url(#bgGrad)"/>
+
+  <!-- main body: rounded "terminal window" + tail = code + conversation -->
+  <rect x="13" y="13" width="94" height="94" rx="26" fill="url(#bgGrad)" filter="url(#dropShadow)"/>
+
+  <!-- glossy top highlight, clipped to the badge shape -->
+  <ellipse cx="60" cy="34" rx="40" ry="18" fill="#FFFFFF" opacity="0.05" clip-path="url(#badgeClip)"/>
+
+  <!-- rim light -->
+  <rect x="13" y="13" width="94" height="94" rx="26" fill="none" stroke="url(#rimGrad)" stroke-width="1.5"/>
+
+  <!-- terminal prompt chevron ">" -->
+  <path d="M39 38 L63 60 L39 82"
+        fill="none"
+        stroke="url(#glyphGrad)"
+        stroke-width="9.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- blinking cursor "_" -->
+  <rect x="68" y="68" width="22" height="9.5" rx="3" fill="url(#glyphGrad)">
+    <animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.45;0.5;0.95;1" dur="1.6s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- social "live" signal: soft pulse ring + solid dot -->
+  <circle cx="100" cy="20" r="9" fill="url(#liveGrad)" opacity="0.35" filter="url(#dotGlow)">
+    <animate attributeName="r" values="7;13;7" dur="2.4s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.5;0;0.5" dur="2.4s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="100" cy="20" r="7" fill="url(#liveGrad)" stroke="#0B0D10" stroke-width="2.5"/>
+</svg>
