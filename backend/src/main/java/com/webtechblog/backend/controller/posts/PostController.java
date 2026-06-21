@@ -52,4 +52,64 @@ public class PostController {
                 .data(postService.getAllPosts())
                 .build();
     }
+
+    @GetMapping("/{postId}")
+    public ApiResponse<PostResponse> getPost(@PathVariable long postId) {
+
+        return ApiResponse.<PostResponse>builder()
+                .success(true)
+                .message("Post fetched successfully")
+                .data(postService.getPost(postId))
+                .build();
+    }
+
+    @GetMapping("/my-post")
+    public ApiResponse<List<PostResponse>> getAllUserPosts() {
+        return ApiResponse.<List<PostResponse>>builder()
+                .success(true)
+                .message("Posts fetched successfully")
+                .data(postService.getMyPosts())
+                .build();
+    }
+
+    @PutMapping("/save/{postId}")
+    public ApiResponse<PostResponse> updatePost(
+            @PathVariable Long postId,
+            @RequestParam String title,
+            @RequestParam String description,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) MultipartFile image,
+            @RequestParam String skills,
+            @RequestParam(required = false) String customSkill
+    ) throws Exception {
+
+        PostEntity post = postService.updatePost(
+                postId,
+                title,
+                description,
+                code,
+                image,
+                skills,
+                customSkill
+        );
+
+        return ApiResponse.<PostResponse>builder()
+                .success(true)
+                .message("Post updated successfully")
+                .data(postService.convertToResponse(post))
+                .build();
+    }
+
+    @DeleteMapping("/{postId}")
+    public ApiResponse<Void> deletePost(
+            @PathVariable Long postId
+    ) {
+
+        postService.deletePost(postId);
+
+        return ApiResponse.<Void>builder()
+                .success(true)
+                .message("Post deleted successfully")
+                .build();
+    }
 }

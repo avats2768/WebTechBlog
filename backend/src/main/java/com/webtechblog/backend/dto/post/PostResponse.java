@@ -22,7 +22,12 @@ public class PostResponse {
     private Long commentCount;
 
     private String username;
-    private String profession;
+    private String firstName;
+    private String lastName;
+    private String headline;
+    private String profileImage;
+    private String company;
+    private String designation;
 
     private List<String> skills;
 

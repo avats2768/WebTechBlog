@@ -5,6 +5,8 @@ import com.webtechblog.backend.dto.*;
 import com.webtechblog.backend.entity.UserEntity;
 
 import com.webtechblog.backend.repository.UserRepository;
+import com.webtechblog.backend.entity.ProfileEntity;
+import com.webtechblog.backend.repository.ProfileRepository;
 
 import com.webtechblog.backend.security.JwtService;
 
@@ -22,7 +24,7 @@ public class AuthServiceImpl
         implements AuthService {
 
     private final UserRepository userRepository;
-
+    private final ProfileRepository profileRepository;
     private final PasswordEncoder passwordEncoder;
 
     private final JwtService jwtService;
@@ -57,19 +59,33 @@ public class AuthServiceImpl
                         )
                         .build();
 
-        userRepository.save(user);
+        UserEntity savedUser =
+                userRepository.save(user);
+
+        ProfileEntity profile =
+                ProfileEntity.builder()
+                        .userId(savedUser.getId())
+                        .firstName(savedUser.getUsername())
+                        .profileImage("/public/profile/default-profile.jpeg")
+                        .coverImage("/public/cover/default-cover.jpeg")
+                        .headline("")
+                        .bio("")
+                        .status(1)
+                        .build();
+
+        profileRepository.save(profile);
 
         String token =
                 jwtService.generateToken(
-                        user.getEmail()
+                        savedUser.getEmail()
                 );
 
         return new AuthResponse(
                 token,
-                user.getUuid(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getRoleEntity()
+                savedUser.getUuid(),
+                savedUser.getUsername(),
+                savedUser.getEmail(),
+                savedUser.getRoleEntity()
         );
     }
 
