@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import Select from "react-select";
-import { UploadCloud, X } from "lucide-react";
-import { createPost } from "../../api/postsApi";
+import ThemedSelect from "../../components/common/ThemedSelect";
+import { ArrowLeft, UploadCloud, X } from "lucide-react";
+import { createPost, updatePost, getPostById } from "../../api/postsApi";
 import { getSkills } from "../../api/choiceApis/skillApi";
 import HomeLayout from "../../layouts/HomeLayout";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext"; // adjust path if needed
 
 // Sentinel value for the "Other" skill option — must match what's pushed
@@ -14,7 +14,7 @@ const OTHER_SKILL_VALUE = 0;
 export default function AddPost() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
-
+  const [removeExistingImage, setRemoveExistingImage] = useState(false);
   const [skillOptions, setSkillOptions] = useState([]);
   const [formData, setFormData] = useState({
     title: "",
@@ -27,16 +27,57 @@ export default function AddPost() {
   const [imagePreview, setImagePreview] = useState(null);
 
   const [toast, setToast] = useState({
-  show: false,
-  message: "",
-  type: "success",
-});
+    show: false,
+    message: "",
+    type: "success",
+  });
 
-const navigate = useNavigate();
+  const navigate = useNavigate();
+
+  const [searchParams] = useSearchParams();
+
+  const id = searchParams.get("id");
+
+  useEffect(() => {
+    if (!id) return;
+
+    if (skillOptions.length > 0) {
+      fetchPost();
+    }
+  }, [id, skillOptions.length]);
 
   useEffect(() => {
     fetchSkills();
   }, []);
+
+  async function fetchPost() {
+    try {
+      const { data } = await getPostById(id);
+
+      if (!data?.success) return;
+
+      const post = data.data;
+
+      const selectedSkills = skillOptions.filter((skill) =>
+        post.skills?.includes(skill.label),
+      );
+
+      setFormData({
+        title: post.title || "",
+        description: post.description || "",
+        code: post.code || "",
+        image: null,
+        skills: selectedSkills,
+        customSkill: "",
+      });
+
+      if (post.imageUrl) {
+        setImagePreview(post.imageUrl);
+      }
+    } catch (error) {
+      console.error("Failed to fetch post", error);
+    }
+  }
 
   const fetchSkills = async () => {
     try {
@@ -58,7 +99,9 @@ const navigate = useNavigate();
     }
   };
 
-  const hasOtherSkill = formData.skills.some((s) => s.value === OTHER_SKILL_VALUE);
+  const hasOtherSkill = formData.skills.some(
+    (s) => s.value === OTHER_SKILL_VALUE,
+  );
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -68,19 +111,19 @@ const navigate = useNavigate();
   };
 
   const showToast = (message, type = "success") => {
-  setToast({
-    show: true,
-    message,
-    type,
-  });
+    setToast({
+      show: true,
+      message,
+      type,
+    });
 
-  setTimeout(() => {
-    setToast((prev) => ({
-      ...prev,
-      show: false,
-    }));
-  }, 3000);
-};
+    setTimeout(() => {
+      setToast((prev) => ({
+        ...prev,
+        show: false,
+      }));
+    }, 3000);
+  };
 
   const handleImage = (e) => {
     const file = e.target.files[0];
@@ -91,8 +134,13 @@ const navigate = useNavigate();
   };
 
   const removeImage = () => {
-    setFormData((prev) => ({ ...prev, image: null }));
+    setFormData((prev) => ({
+      ...prev,
+      image: null,
+    }));
+
     setImagePreview(null);
+    setRemoveExistingImage(true);
   };
 
   const handleSkillsChange = (selected) => {
@@ -102,120 +150,83 @@ const navigate = useNavigate();
     }));
   };
 
+  const handleBackClick = () => {
+    navigate(-1);
+  };
+
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const payload = new FormData();
+    try {
+      const payload = new FormData();
 
-  payload.append("title", formData.title);
-  payload.append("description", formData.description);
-  payload.append("code", formData.code);
+      if (id) {
+        payload.append("id", id);
+      }
 
-  if (formData.image) {
-    payload.append("image", formData.image);
-  }
+      payload.append("title", formData.title);
+      payload.append("description", formData.description);
+      payload.append("code", formData.code);
 
-  payload.append(
-    "skills",
-    JSON.stringify(
-      formData.skills.map((skill) => skill.value)
-    )
-  );
+      if (formData.image) {
+        payload.append("image", formData.image);
+      }
 
-  if (hasOtherSkill) {
-    payload.append(
-      "customSkill",
-      formData.customSkill
-    );
-  }
+      if (removeExistingImage) {
+        payload.append("removeImage", "true");
+      }
 
-  try {
-    const response = await createPost(payload);
+      payload.append(
+        "skills",
+        JSON.stringify(formData.skills.map((skill) => skill.value)),
+      );
 
-    showToast(
-      "Post created successfully",
-      "success"
-    );
+      if (hasOtherSkill) {
+        payload.append("customSkill", formData.customSkill);
+      }
 
-    setTimeout(() => {
-      navigate("/");
-    }, 1500);
+      if (id) {
+        await updatePost(id, payload);
+      } else {
+        await createPost(payload);
+      }
 
-} catch (error) {
+      showToast(
+        id ? "Post updated successfully" : "Post created successfully",
+        "success",
+      );
 
-  if (error.response) {
-    showToast(
-      error.response.data?.message ||
-      "Failed to create post",
-      "danger"
-    );
+      setTimeout(() => {
+        navigate("/");
+      }, 1000);
+    } catch (error) {
+      showToast(
+        error.response?.data?.message ||
+          error.message ||
+          "Something went wrong",
+        "danger",
+      );
 
-    console.log(error.response.data);
-  } else {
-    showToast(
-      error.message ||
-      "Network error",
-      "danger"
-    );
-  }
-
-  console.error(error);
-}
-};
-
-  // react-select doesn't take className theming, so read the live CSS
-  // variables here and pass them straight into its style objects
-  const cssVar = (name, fallback) =>
-    getComputedStyle(document.documentElement).getPropertyValue(name) || fallback;
-
-  const selectStyles = {
-    control: (base, state) => ({
-      ...base,
-      minHeight: "48px",
-      borderRadius: cssVar("--radius-md", "10px"),
-      backgroundColor: cssVar("--card", "#fff"),
-      borderColor: state.isFocused ? cssVar("--primary", "#2563eb") : cssVar("--border", "#e2e8f0"),
-      boxShadow: state.isFocused ? `0 0 0 1px ${cssVar("--primary", "#2563eb")}` : "none",
-      "&:hover": { borderColor: cssVar("--primary", "#2563eb") },
-    }),
-    menu: (base) => ({
-      ...base,
-      backgroundColor: cssVar("--card", "#fff"),
-      border: `1px solid ${cssVar("--border", "#e2e8f0")}`,
-    }),
-    option: (base, state) => ({
-      ...base,
-      backgroundColor: state.isFocused ? cssVar("--surface", "#f1f5f9") : "transparent",
-      color: cssVar("--text-primary", "#0f172a"),
-      cursor: "pointer",
-    }),
-    input: (base) => ({ ...base, color: cssVar("--text-primary", "#0f172a") }),
-    placeholder: (base) => ({ ...base, color: cssVar("--text-secondary", "#475569") }),
-    singleValue: (base) => ({ ...base, color: cssVar("--text-primary", "#0f172a") }),
-    multiValue: (base) => ({
-      ...base,
-      backgroundColor: cssVar("--surface", "#f8fafc"),
-      borderRadius: "9999px",
-      paddingLeft: "4px",
-    }),
-    multiValueLabel: (base) => ({
-      ...base,
-      color: cssVar("--primary", "#2563eb"),
-      fontWeight: 500,
-    }),
-    multiValueRemove: (base) => ({
-      ...base,
-      color: cssVar("--primary", "#2563eb"),
-      borderRadius: "9999px",
-      "&:hover": { backgroundColor: cssVar("--border", "#e2e8f0"), color: cssVar("--primary-hover", "#1d4ed8") },
-    }),
+      console.error(error);
+    }
   };
 
   return (
     <HomeLayout>
       <div className="max-w-3xl mx-auto p-6">
+        <button
+          type="button"
+          className="btn btn-ghost btn-icon"
+          style={{ marginBottom: 12 }}
+          onClick={handleBackClick}
+          aria-label="Go back"
+          title="Go back"
+        >
+          <ArrowLeft size={16} />
+        </button>
+
         <div className="card p-lg">
-          <h1 className="heading-lg" style={{ marginBottom: 4 }}>Create New Post</h1>
+          <h1 className="heading-lg">{id ? "Edit Post" : "Create New Post"}</h1>
           <p className="body-sm" style={{ marginBottom: 32 }}>
             Share an article, snippet or update with the community.
           </p>
@@ -258,7 +269,11 @@ const navigate = useNavigate();
                 value={formData.code}
                 onChange={handleChange}
                 className="input"
-                style={{ backgroundColor: "var(--surface)", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" }}
+                style={{
+                  backgroundColor: "var(--surface)",
+                  fontFamily:
+                    "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+                }}
                 placeholder="Paste your code here..."
               />
             </div>
@@ -270,26 +285,43 @@ const navigate = useNavigate();
               {imagePreview ? (
                 <div
                   className="relative w-full h-48 overflow-hidden"
-                  style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-md)" }}
+                  style={{
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-md)",
+                  }}
                 >
-                  <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
                   <button
                     type="button"
                     onClick={removeImage}
                     className="btn btn-ghost btn-icon absolute top-2 right-2"
                     style={{ color: "var(--danger)" }}
                   >
-                    <X size={14} />
+                    <X size={18} />
                   </button>
                 </div>
               ) : (
                 <label
                   className="flex flex-col items-center justify-center gap-2 w-full h-32 cursor-pointer transition-colors"
-                  style={{ border: "1px dashed var(--border)", borderRadius: "var(--radius-md)" }}
+                  style={{
+                    border: "1px dashed var(--border)",
+                    borderRadius: "var(--radius-md)",
+                  }}
                 >
                   <UploadCloud size={22} className="text-secondary" />
-                  <span className="body-sm">Click to upload, or drag an image here</span>
-                  <input type="file" accept="image/*" onChange={handleImage} className="hidden" />
+                  <span className="body-sm">
+                    Click to upload, or drag an image here
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImage}
+                    className="hidden"
+                  />
                 </label>
               )}
             </div>
@@ -297,17 +329,17 @@ const navigate = useNavigate();
             {/* Skills */}
             <div className="form-group">
               <label className="form-label">Skills</label>
-              <Select
-                key={isDark ? "dark" : "light"} // re-reads CSS vars when theme flips
+              <ThemedSelect
                 isMulti
                 options={skillOptions}
                 value={formData.skills}
                 onChange={handleSkillsChange}
-                styles={selectStyles}
                 placeholder="Search and select skills..."
                 noOptionsMessage={() => "No skills found"}
               />
-              <span className="form-helper">Search and select as many skills as apply.</span>
+              <span className="form-helper">
+                Search and select as many skills as apply.
+              </span>
             </div>
 
             {/* Custom skill */}
@@ -327,28 +359,26 @@ const navigate = useNavigate();
 
             {/* Submit */}
             <button type="submit" className="btn btn-primary w-full">
-              Publish Post
+              {id ? "Update Post" : "Publish Post"}
             </button>
           </form>
         </div>
       </div>
       {toast.show && (
-  <div
-    className={`toast ${
-      toast.type === "success"
-        ? "toast-success"
-        : "toast-danger"
-    }`}
-    style={{
-      position: "fixed",
-      bottom: 24,
-      right: 24,
-      zIndex: 9999,
-    }}
-  >
-    {toast.message}
-  </div>
-)}
+        <div
+          className={`toast ${
+            toast.type === "success" ? "toast-success" : "toast-danger"
+          }`}
+          style={{
+            position: "fixed",
+            bottom: 24,
+            right: 24,
+            zIndex: 9999,
+          }}
+        >
+          {toast.message}
+        </div>
+      )}
     </HomeLayout>
   );
 }

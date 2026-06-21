@@ -252,6 +252,80 @@
     border-radius: var(--radius-md);
   }
 
+  /* ---------- Tooltip ---------- */
+  .tooltip {
+    position: absolute;
+    z-index: 70;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--background);
+    background-color: var(--text-primary);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    pointer-events: none;
+  }
+  .tooltip-top    { bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); }
+  .tooltip-bottom { top: calc(100% + 8px); left: 50%; transform: translateX(-50%); }
+  .tooltip-left   { right: calc(100% + 8px); top: 50%; transform: translateY(-50%); }
+  .tooltip-right  { left: calc(100% + 8px); top: 50%; transform: translateY(-50%); }
+
+  /* ---------- Switch ---------- */
+  .switch-row { display: inline-flex; align-items: center; gap: 10px; }
+  .switch {
+    width: 40px;
+    height: 22px;
+    border-radius: 999px;
+    background-color: var(--border);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    transition: background-color 0.15s ease;
+    flex-shrink: 0;
+  }
+  .switch-on { background-color: var(--primary); }
+  .switch-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    box-shadow: var(--shadow-sm);
+    transform: translateX(2px);
+    transition: transform 0.15s ease;
+  }
+  .switch-on .switch-thumb { transform: translateX(20px); }
+
+  /* ---------- Checkbox / Radio ---------- */
+  .checkbox-row { display: inline-flex; align-items: center; gap: 8px; }
+  .checkbox-input, .radio-input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+    cursor: pointer;
+  }
+
+  /* ---------- Spinner ---------- */
+  .spinner {
+    display: inline-block;
+    border-radius: 50%;
+    border: 2px solid color-mix(in srgb, var(--text-primary) 20%, transparent);
+    border-top-color: var(--primary);
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- Skeleton ---------- */
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface) 25%, var(--border) 37%, var(--surface) 63%);
+    background-size: 400% 100%;
+    animation: skeleton-shimmer 1.4s ease infinite;
+  }
+  @keyframes skeleton-shimmer {
+    0%   { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
   /* ---------- Inputs ---------- */
   .input {
     width: 100%;
@@ -544,6 +618,123 @@
     background-color: var(--primary);
     color: var(--on-primary);
     font-weight: 600;
+  }
+
+  /* ---------- Profile page ---------- */
+  .profile-page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px 48px;
+  }
+
+  .profile-cover {
+    position: relative;
+    height: 220px;
+    border-radius: var(--radius-lg);
+    background-size: cover;
+    background-position: center;
+    margin-top: 24px;
+  }
+
+  .profile-avatar-wrap {
+    position: absolute;
+    left: 32px;
+    bottom: -48px;
+  }
+
+  .profile-avatar {
+    width: 112px;
+    height: 112px;
+    border-radius: 50%;
+    border: 4px solid var(--background);
+    object-fit: cover;
+    display: block;
+    background-color: var(--surface);
+  }
+
+  .profile-status-dot {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: var(--success);
+    border: 3px solid var(--background);
+  }
+
+  .profile-edit-btn {
+    position: absolute;
+    right: 20px;
+    bottom: 16px;
+  }
+
+  .profile-identity {
+    padding: 60px 32px 0;
+  }
+
+  .profile-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 24px;
+    margin-top: 28px;
+  }
+
+  @media (max-width: 900px) {
+    .profile-grid { grid-template-columns: 1fr; }
+    .profile-identity { padding-left: 16px; padding-right: 16px; }
+    .profile-cover { margin-left: 0; }
+    .profile-avatar-wrap { left: 16px; }
+  }
+
+  .profile-post-row {
+    padding: 18px 20px;
+  }
+
+  .avatar-sm {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    background-color: color-mix(in srgb, var(--primary) 14%, transparent);
+    color: var(--primary);
+    flex-shrink: 0;
+  }
+
+  .skill-track {
+    width: 100%;
+    height: 6px;
+    border-radius: var(--radius-xl);
+    background-color: var(--surface);
+    overflow: hidden;
+  }
+
+  .skill-fill {
+    height: 100%;
+    border-radius: var(--radius-xl);
+    transition: width 0.3s ease;
+  }
+
+  .community-emoji {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem;
+    flex-shrink: 0;
   }
 
   /* ---------- Navbar ---------- */

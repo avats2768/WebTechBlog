@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, Plus, Bell, MessageSquare, ChevronDown, LogOut } from "lucide-react";
 
 import { logout } from "../../features/auth/authSlice"; // adjust path if needed
-import { ThemeToggle } from "../../components/ThemeToggle"; // adjust path if needed
+import { ThemeToggle } from "../../components/common/ThemeToggle"; // adjust path if needed
 
 export default function TopNav({ notificationCount = 3 }) {
   const storeUser = useSelector((state) => state.auth.user);
@@ -70,7 +70,7 @@ export default function TopNav({ notificationCount = 3 }) {
 
         {/* Right side actions */}
         <div className="flex items-center gap-3 shrink-0">
-          <button className="btn btn-primary" onClick={() => navigate("/add-post")}>
+          <button className="btn btn-primary" onClick={() => navigate("/save-post")}>
             <Plus size={16} />
              Post
           </button>

@@ -1,6 +1,6 @@
 import { CheckCircle2 } from "lucide-react";
 import Logo from "../assets/logo/app-logo.svg"; // adjust path if needed
-import { ThemeToggle } from "../components/ThemeToggle"; // adjust path if needed
+import { ThemeToggle } from "../components/common/ThemeToggle"; // adjust path if needed
 
 const HIGHLIGHTS = [
   "Real-time discussions with other developers",

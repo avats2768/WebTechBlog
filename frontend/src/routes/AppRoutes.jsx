@@ -1,0 +1,68 @@
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+
+import Login from "../pages/login/Login";
+import Register from "../pages/register/Register";
+import Dashboard from "../pages/dashboard/Dashboard";
+import SavePost from "../pages/post/SavePost";
+import OpenPost from "../pages/post/OpenPost";
+import ProfilePage from "../pages/profile/Profile";
+import { ThemeDemo } from "../pages/ThemeDemo";
+
+import ProtectedRoute from "./ProtectedRoute";
+import UpdateProfile from "../pages/profile/UpdateProfile";
+
+export default function AppRoutes() {
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+
+  return (
+    <Routes>
+      <Route
+        path="/"
+        element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />}
+      />
+
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/save-post"
+        element={
+          <ProtectedRoute>
+            <SavePost />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/update-profile"
+        element={
+          <ProtectedRoute>
+            <UpdateProfile />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route path="/theme-demo" element={<ThemeDemo />} />
+      <Route path="/post/:id" element={<OpenPost />} />
+    </Routes>
+  );
+}

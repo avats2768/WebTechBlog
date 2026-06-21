@@ -8,6 +8,8 @@ import { Provider } from "react-redux";
 import { store } from "./app/store";
 
 import { BrowserRouter } from "react-router-dom";
+import { ConfirmProvider } from "./context/ConfirmContext";
+import { ToastProvider } from "./context/ToastContext";
 import { ThemeProvider } from "./context/ThemeContext"; // adjust path to wherever you saved this file
 
 ReactDOM.createRoot(
@@ -16,7 +18,11 @@ ReactDOM.createRoot(
   <Provider store={store}>
     <ThemeProvider>
       <BrowserRouter>
-        <App />
+        <ConfirmProvider>
+          <ToastProvider>
+            <App />
+          </ToastProvider>
+        </ConfirmProvider>
       </BrowserRouter>
     </ThemeProvider>
   </Provider>
