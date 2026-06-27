@@ -42,6 +42,7 @@ export default function Login() {
           token: data.token,
           user: {
             uuid: data.uuid,
+            userId:data.userId,
             username: data.username,
             email: data.email,
             role: data.role,

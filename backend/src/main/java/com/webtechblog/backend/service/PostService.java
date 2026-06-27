@@ -31,6 +31,8 @@ public class PostService {
     private final UserRepository userRepository;
     private final SkillRepository skillRepository;
     private final ProfileRepository profileRepository;
+    private final PostLikeService postLikeService;
+    private final PostCommentService postCommentService;
 
     @Value("${server.servlet.context-path}")
     private String contextPath;
@@ -153,6 +155,8 @@ public class PostService {
                 .viewCount(post.getViewCount())
                 .likeCount(post.getLikeCount())
                 .commentCount(post.getCommentCount())
+                .isLiked(postLikeService.isLiked(post.getId()))
+                .comments(postCommentService.getComments(post.getId()))
 
                 .username(
                         user != null

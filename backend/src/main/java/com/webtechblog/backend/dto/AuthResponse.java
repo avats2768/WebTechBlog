@@ -8,6 +8,8 @@ public record AuthResponse(
 
         String uuid,
 
+        Long userId,
+
         String username,
 
         String email,

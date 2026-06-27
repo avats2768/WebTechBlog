@@ -16,6 +16,8 @@ public class ProfileResponse {
     private LocalDate dob;
     private ProfileEntity.Gender Gender;
 
+    private Integer experienceYears;
+
     private String profileImage;
     private String coverImage;
 
@@ -29,6 +31,7 @@ public class ProfileResponse {
     private String city;
     private String state;
     private String country;
+    private String address;
 
     private String githubUrl;
     private String linkedinUrl;

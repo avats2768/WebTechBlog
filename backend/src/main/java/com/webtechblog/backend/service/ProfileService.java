@@ -63,6 +63,7 @@ public class ProfileService {
         response.setFirstName(profile.getFirstName());
         response.setLastName(profile.getLastName());
         response.setGender(profile.getGender());
+        response.setExperienceYears(profile.getExperienceYears());
 
         response.setProfileImage(baseUrl+contextPath+profile.getProfileImage());
         response.setCoverImage(baseUrl+contextPath+profile.getCoverImage());
@@ -79,6 +80,7 @@ public class ProfileService {
         response.setCity(profile.getCity());
         response.setState(profile.getState());
         response.setCountry(profile.getCountry());
+        response.setAddress(profile.getAddress());
 
         response.setGithubUrl(profile.getGithubUrl());
         response.setLinkedinUrl(profile.getLinkedinUrl());

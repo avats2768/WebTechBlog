@@ -83,6 +83,7 @@ public class AuthServiceImpl
         return new AuthResponse(
                 token,
                 savedUser.getUuid(),
+                savedUser.getId(),
                 savedUser.getUsername(),
                 savedUser.getEmail(),
                 savedUser.getRoleEntity()
@@ -125,6 +126,7 @@ public class AuthServiceImpl
         return new AuthResponse(
                 token,
                 user.getUuid(),
+                user.getId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getRoleEntity()

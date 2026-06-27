@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import HomeLayout from "../../layouts/HomeLayout";
 import ThemedSelect from "../../components/common/ThemedSelect";
 import { UploadCloud, Pencil } from "lucide-react";
@@ -15,6 +16,7 @@ export default function UpdateProfile() {
   const toast = useToast();
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const navigate= useNavigate()
 
   const [formData, setFormData] = useState({
     profileImage: null,
@@ -313,7 +315,7 @@ const handleSkillsChange = (selected) => {
 
       if (response.data?.success) {
         toast.success("Profile updated successfully");
-
+        navigate("/profile")
         loadData();
       }
     } catch (error) {

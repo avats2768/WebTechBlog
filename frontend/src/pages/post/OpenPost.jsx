@@ -1,46 +1,51 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   ArrowLeft,
   Heart,
   MessageCircle,
   Eye,
   Bookmark,
-  MoreHorizontal,
-  Pencil,
-  Code2,
   Trash2,
   Copy,
   Check,
+  Send,
 } from "lucide-react";
 import { timeAgo, initials } from "../../utils/postUtils";
 import HomeLayout from "../../layouts/HomeLayout";
-import { getPostById } from "../../api/postsApi";
+import {
+  getPostById,
+  getComments,
+  addComment,
+  deleteComment,
+  toggleLike,
+} from "../../api/postsApi";
+import { useToast } from "../../context/ToastContext";
 
 export default function OpenPost() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
+  const currentUserId = useSelector((state) => state.auth.user?.userId);
 
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+
+  const [comments, setComments] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(true);
+  const [commentCount, setCommentCount] = useState(0);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchPost();
+    loadComments();
   }, [id]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-
-    const closeMenu = () => setMenuOpen(false);
-
-    document.addEventListener("click", closeMenu);
-
-    return () => {
-      document.removeEventListener("click", closeMenu);
-    };
-  }, [menuOpen]);
 
   async function fetchPost() {
     try {
@@ -50,6 +55,9 @@ export default function OpenPost() {
 
       if (response.data?.success) {
         setPost(response.data.data);
+        setCommentCount(response.data.data.commentCount);
+        setLikeCount(response.data.data.likeCount);
+        setLiked(response.data.data.isLiked);
       }
     } catch (err) {
       console.error("Failed to fetch post", err);
@@ -58,14 +66,79 @@ export default function OpenPost() {
     }
   }
 
+  async function loadComments() {
+    try {
+      setCommentsLoading(true);
+      const res = await getComments(id);
+      const sorted = [...(res.data || [])].sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+      setComments(sorted);
+    } catch (err) {
+      console.error("Failed to fetch comments", err);
+      toast.error("Unable to load comments");
+    } finally {
+      setCommentsLoading(false);
+    }
+  }
+
+  const handleLike = async () => {
+    try {
+      const { data } = await toggleLike(id);
+      setLiked(data.liked);
+      setLikeCount(data.likeCount);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Unable to like post");
+    }
+  };
+
+  const handleAddComment = async () => {
+    const text = comment.trim();
+    if (!text || submitting) return;
+
+    try {
+      setSubmitting(true);
+      const { data } = await addComment(id, text);
+      setComment("");
+      await loadComments();
+      setCommentCount(data.commentCount);
+      toast.success(data.message || "Comment added");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to add comment");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCommentKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleAddComment();
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    try {
+      const { data } = await deleteComment(commentId);
+      await loadComments();
+      setCommentCount(data.commentCount);
+      toast.success(data.message || "Comment deleted");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete comment");
+    }
+  };
+
+  const commentAuthorLabel = (c) => {
+    if (c.firstName) return `${c.firstName} ${c.lastName || ""}`.trim();
+    if (currentUserId && c.userId === currentUserId) return "You";
+    return `User #${c.userId}`;
+  };
+
   const handleCopyCode = async () => {
     try {
       await navigator.clipboard.writeText(post.code || "");
       setCopied(true);
-
-      setTimeout(() => {
-        setCopied(false);
-      }, 2000);
+      setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error("Failed to copy code", error);
     }
@@ -74,10 +147,7 @@ export default function OpenPost() {
   if (!post) {
     return (
       <HomeLayout>
-        <div
-          className="flex items-center justify-center"
-          style={{ minHeight: "60vh" }}
-        >
+        <div className="flex items-center justify-center" style={{ minHeight: "60vh" }}>
           <div className="card p-lg">
             <p className="body-md">Post not found</p>
           </div>
@@ -88,19 +158,12 @@ export default function OpenPost() {
 
   return (
     <HomeLayout>
-      <div
-        className="mx-auto"
-        style={{
-          maxWidth: "1000px",
-          padding: "24px",
-        }}
-      >
+      <div className="mx-auto" style={{ maxWidth: "1000px", padding: "24px" }}>
         {/* Header */}
         <div
           className="sticky top-0 z-20 backdrop-blur-md border-default"
           style={{
-            backgroundColor:
-              "color-mix(in srgb, var(--background) 90%, transparent)",
+            backgroundColor: "color-mix(in srgb, var(--background) 90%, transparent)",
             borderTop: "none",
             borderLeft: "none",
             borderRight: "none",
@@ -121,29 +184,17 @@ export default function OpenPost() {
         </div>
 
         {/* Main Card */}
-        <div
-          className="card"
-          style={{
-            overflow: "hidden",
-            marginTop: "20px",
-          }}
-        >
-          {/* Image */}
+        <div className="card" style={{ overflow: "hidden", marginTop: "20px" }}>
           {post.imageUrl && (
             <img
               src={post.imageUrl}
               alt={post.title}
               className="w-full object-cover"
-              style={{
-                maxHeight: "700px",
-                width: "100%",
-              }}
+              style={{ maxHeight: "700px", width: "100%" }}
             />
           )}
 
-          {/* Content */}
           <div className="p-lg">
-            {/* Author */}
             <div className="flex items-center gap-3 mb-6">
               {post.profileImage ? (
                 <img
@@ -155,8 +206,7 @@ export default function OpenPost() {
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm"
                   style={{
-                    backgroundColor:
-                      "color-mix(in srgb, var(--primary) 14%, transparent)",
+                    backgroundColor: "color-mix(in srgb, var(--primary) 14%, transparent)",
                     color: "var(--primary)",
                   }}
                 >
@@ -164,10 +214,7 @@ export default function OpenPost() {
                 </div>
               )}
               <div>
-                <p
-                  className="text-sm font-semibold"
-                  style={{ color: "var(--text-primary)" }}
-                >
+                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                   {post.firstName} {post.lastName}
                 </p>
                 <p className="body-sm">
@@ -176,18 +223,10 @@ export default function OpenPost() {
               </div>
             </div>
 
-            {/* Title */}
-            <h1
-              className="heading-xl"
-              style={{
-                marginBottom: "16px",
-                color: "var(--text-primary)",
-              }}
-            >
+            <h1 className="heading-xl" style={{ marginBottom: "16px", color: "var(--text-primary)" }}>
               {post.title}
             </h1>
 
-            {/* Description */}
             <div
               className="body-md"
               style={{
@@ -200,14 +239,8 @@ export default function OpenPost() {
               {post.description}
             </div>
 
-            {/* Skills */}
             {post.skills?.length > 0 && (
-              <div
-                className="flex flex-wrap gap-2"
-                style={{
-                  marginTop: "24px",
-                }}
-              >
+              <div className="flex flex-wrap gap-2" style={{ marginTop: "24px" }}>
                 {post.skills.map((skill) => (
                   <span key={skill} className="badge">
                     {skill}
@@ -216,15 +249,10 @@ export default function OpenPost() {
               </div>
             )}
 
-            {/* Code */}
             {post.code && (
               <div style={{ marginTop: "32px" }}>
-                <div
-                  className="flex items-center justify-between"
-                  style={{ marginBottom: "12px" }}
-                >
+                <div className="flex items-center justify-between" style={{ marginBottom: "12px" }}>
                   <h3 className="heading-md">Code</h3>
-
                   <button
                     className={`btn ${copied ? "btn-success" : "btn-outline"}`}
                     onClick={handleCopyCode}
@@ -263,37 +291,104 @@ export default function OpenPost() {
           </div>
         </div>
 
+        {/* Comments */}
+        <div className="card p-lg" style={{ marginTop: "20px" }}>
+          <h3 className="heading-md" style={{ marginBottom: "16px" }}>
+            Comments {commentCount > 0 && `(${commentCount})`}
+          </h3>
+
+          <div className="flex gap-2">
+            <input
+              className="input flex-1"
+              value={comment}
+              placeholder="Write a comment..."
+              onChange={(e) => setComment(e.target.value)}
+              onKeyDown={handleCommentKeyDown}
+              disabled={submitting}
+            />
+            <button
+              className="btn btn-primary flex items-center gap-1.5"
+              onClick={handleAddComment}
+              disabled={submitting || !comment.trim()}
+            >
+              <Send size={14} />
+              Send
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-4 mt-5">
+            {commentsLoading ? (
+              <p className="body-sm">Loading comments…</p>
+            ) : comments.length === 0 ? (
+              <p className="body-sm">No comments yet. Be the first to comment.</p>
+            ) : (
+              comments.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-start justify-between gap-3"
+                  style={{ borderBottom: "1px solid var(--border)", paddingBottom: "12px" }}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs flex-shrink-0"
+                      style={{
+                        backgroundColor: "color-mix(in srgb, var(--primary) 14%, transparent)",
+                        color: "var(--primary)",
+                      }}
+                    >
+                      {initials(c.firstName || "U")}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                        {commentAuthorLabel(c)}{" "}
+                        <span className="body-sm" style={{ fontWeight: 400 }}>
+                          · {c.createdAt ? timeAgo(c.createdAt) : "just now"}
+                        </span>
+                      </p>
+                      <p className="body-sm" style={{ color: "var(--text-primary)" }}>
+                        {c.comment}
+                      </p>
+                    </div>
+                  </div>
+
+                  {currentUserId && c.userId === currentUserId && (
+                    <Trash2
+                      size={14}
+                      className="cursor-pointer"
+                      style={{ color: "var(--danger)", flexShrink: 0, marginTop: 4 }}
+                      onClick={() => handleDeleteComment(c.id)}
+                    />
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
         {/* Footer Stats */}
         <div
           className="sticky bottom-0 backdrop-blur-md border-default"
           style={{
-            backgroundColor:
-              "color-mix(in srgb, var(--background) 92%, transparent)",
+            backgroundColor: "color-mix(in srgb, var(--background) 92%, transparent)",
             borderBottom: "none",
             borderLeft: "none",
             borderRight: "none",
             marginTop: "20px",
           }}
         >
-          <div
-            className="flex items-center justify-center gap-10 py-4"
-            style={{
-              color: "var(--text-secondary)",
-            }}
-          >
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center gap-10 py-4" style={{ color: "var(--text-secondary)" }}>
+            <div className="flex items-center gap-2 cursor-pointer" onClick={handleLike}>
               <Heart
                 size={18}
-                style={{
-                  color: "var(--danger)",
-                }}
+                fill={liked ? "currentColor" : "none"}
+                style={{ color: liked ? "var(--danger)" : "var(--text-secondary)" }}
               />
-              {post.likeCount}
+              {likeCount}
             </div>
 
             <div className="flex items-center gap-2">
               <MessageCircle size={18} />
-              {post.commentCount}
+              {commentCount}
             </div>
 
             <div className="flex items-center gap-2">

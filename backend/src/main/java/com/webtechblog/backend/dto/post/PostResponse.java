@@ -1,9 +1,11 @@
 package com.webtechblog.backend.dto.post;
 
+import com.webtechblog.backend.entity.PostCommentEntity;
 import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -20,6 +22,8 @@ public class PostResponse {
     private Long viewCount;
     private Long likeCount;
     private Long commentCount;
+    private Boolean isLiked;
+    private List<PostCommentResponse> comments;
 
     private String username;
     private String firstName;

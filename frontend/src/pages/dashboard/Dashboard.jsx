@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getAllPosts } from "../../api/postsApi";
 import { useSelector } from "react-redux";
-import { Video, X, Plus, Hash } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import HomeLayout from "../../layouts/HomeLayout";
 import PostCard from "../../components/PostCard";
@@ -46,20 +46,6 @@ const stories = [
   },
 ];
 
-const trendingTags = [
-  { tag: "NextJS", posts: "12.5k posts" },
-  { tag: "TypeScript", posts: "8.7k posts" },
-  { tag: "WebDev", posts: "7.1k posts" },
-  { tag: "SystemDesign", posts: "6.3k posts" },
-  { tag: "DevOps", posts: "4.8k posts" },
-];
-
-const popularAuthors = [
-  { name: "Alex Johnson", handle: "@alexj", followers: "24.5k followers" },
-  { name: "Sarah Wilson", handle: "@sarahw", followers: "18.7k followers" },
-  { name: "Michael Chen", handle: "@mchen_dev", followers: "15.2k followers" },
-];
-
 const communities = [
   { name: "Frontend Masters", members: "124k members" },
   { name: "Backend Brigade", members: "98k members" },
@@ -68,18 +54,9 @@ const communities = [
 
 const tabs = ["For you", "Following", "Trending"];
 
-function initials(name = "") {
-  return name
-    .split(" ")
-    .map((p) => p[0])
-    .join("")
-    .toUpperCase();
-}
-
 export default function Dashboard() {
   const user = useSelector((state) => state.auth.user);
   const [activeTab, setActiveTab] = useState("For you");
-  const [showVideoCard, setShowVideoCard] = useState(true);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -104,7 +81,7 @@ export default function Dashboard() {
 
   return (
     <HomeLayout>
-      <div className="flex gap-6 p-6 max-w-[1400px] mx-auto">
+      <div className="p-6 max-w-[1400px] mx-auto">
         {/* Main feed */}
         <div className="flex-1 min-w-0">
           {/* Welcome banner */}
@@ -160,14 +137,19 @@ export default function Dashboard() {
           </div>
 
           {/* Posts */}
-          {loading ? (
+           {loading ? (
             <p className="body-md">Loading posts...</p>
           ) : posts.length === 0 ? (
             <p className="body-md">No posts yet.</p>
           ) : (
-            <div className="flex flex-col gap-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {posts.map((post) => (
-                <PostCard key={post.uuid} post={post} onDeleted={fetchPosts} />
+                <PostCard
+                  key={post.uuid}
+                  post={post}
+                  onDeleted={fetchPosts}
+                  showEditDelete={false}
+                />
               ))}
             </div>
           )}
@@ -214,129 +196,6 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
-        </div>
-
-        {/* Right sidebar */}
-        <div className="hidden xl:flex flex-col gap-6 w-80 shrink-0">
-          {/* Trending tags */}
-          <div className="card p-lg">
-            <h3 className="heading-md" style={{ marginBottom: 16 }}>
-              Trending Tags
-            </h3>
-            <div className="flex flex-col gap-3">
-              {trendingTags.map((t) => (
-                <div key={t.tag} className="flex items-center justify-between">
-                  <span
-                    className="flex items-center gap-1.5 text-sm"
-                    style={{ color: "var(--text-primary)" }}
-                  >
-                    <Hash size={14} style={{ color: "var(--primary)" }} />{" "}
-                    {t.tag}
-                  </span>
-                  <span className="body-sm">{t.posts}</span>
-                </div>
-              ))}
-            </div>
-            <button
-              className="text-sm font-medium hover:underline mt-4"
-              style={{ color: "var(--primary)" }}
-            >
-              See all tags
-            </button>
-          </div>
-
-          {/* Popular authors */}
-          <div className="card p-lg">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="heading-md">Popular Authors</h3>
-              <button
-                className="text-sm font-medium hover:underline"
-                style={{ color: "var(--primary)" }}
-              >
-                View all
-              </button>
-            </div>
-            <div className="flex flex-col gap-4">
-              {popularAuthors.map((a) => (
-                <div
-                  key={a.handle}
-                  className="flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center font-semibold text-xs"
-                      style={{
-                        backgroundColor:
-                          "color-mix(in srgb, var(--primary) 14%, transparent)",
-                        color: "var(--primary)",
-                      }}
-                    >
-                      {initials(a.name)}
-                    </div>
-                    <div>
-                      <p
-                        className="text-sm font-medium"
-                        style={{ color: "var(--text-primary)" }}
-                      >
-                        {a.name}
-                      </p>
-                      <p className="body-sm">
-                        {a.handle} · {a.followers}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    className="btn btn-outline"
-                    style={{ padding: "6px 12px", fontSize: "0.75rem" }}
-                  >
-                    Follow
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Start a video call */}
-          {showVideoCard && (
-            <div
-              className="relative p-5 overflow-hidden"
-              style={{
-                borderRadius: "var(--radius-lg)",
-                backgroundColor: "var(--secondary)",
-                color: "var(--background)",
-              }}
-            >
-              <button
-                onClick={() => setShowVideoCard(false)}
-                className="absolute top-3 right-3"
-                style={{ color: "var(--background)", opacity: 0.6 }}
-              >
-                <X size={16} />
-              </button>
-              <h3 className="text-base font-semibold mb-2">
-                Start a Video Call
-              </h3>
-              <p className="text-sm mb-4" style={{ opacity: 0.7 }}>
-                Connect face-to-face with your community members.
-              </p>
-              <div className="flex -space-x-2 mb-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="w-8 h-8 rounded-full"
-                    style={{
-                      backgroundColor: "var(--border)",
-                      border: "2px solid var(--secondary)",
-                    }}
-                  />
-                ))}
-              </div>
-              <button className="btn btn-primary w-full">
-                <Video size={16} />
-                Start Call
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </HomeLayout>

@@ -13,11 +13,11 @@ export default function Register() {
   const dispatch = useDispatch();
 
   const [form, setForm] = useState({
-  username: "",
-  email: "",
-  password: "",
-  role: "USER",
-});
+    username: "",
+    email: "",
+    password: "",
+    role: "USER",
+  });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -44,19 +44,17 @@ export default function Register() {
           token: data.token,
           user: {
             uuid: data.uuid,
+            userId: data.userId,
             username: data.username,
             email: data.email,
             role: data.role,
           },
-        })
+        }),
       );
 
       navigate("/dashboard");
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Registration failed"
-      );
+      setError(err.response?.data?.message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -75,7 +73,11 @@ export default function Register() {
         </p>
       }
     >
-      {error && <div className="alert alert-danger" style={{ marginBottom: 16 }}>{error}</div>}
+      {error && (
+        <div className="alert alert-danger" style={{ marginBottom: 16 }}>
+          {error}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <AuthField
@@ -108,34 +110,39 @@ export default function Register() {
         />
 
         <div style={{ marginBottom: 16 }}>
-  <label
-    style={{
-      display: "block",
-      marginBottom: 6,
-      fontWeight: 500,
-    }}
-  >
-    Role
-  </label>
+          <label
+            style={{
+              display: "block",
+              marginBottom: 6,
+              fontWeight: 500,
+            }}
+          >
+            Role
+          </label>
 
-  <select
-    name="role"
-    value={form.role}
-    onChange={handleChange}
-    className="input"
-    style={{
-      width: "100%",
-      padding: "12px",
-      border: "1px solid #ddd",
-      borderRadius: "8px",
-    }}
-  >
-    <option value="USER">User</option>
-    <option value="ADMIN">Admin</option>
-  </select>
-</div>
+          <select
+            name="role"
+            value={form.role}
+            onChange={handleChange}
+            className="input"
+            style={{
+              width: "100%",
+              padding: "12px",
+              border: "1px solid #ddd",
+              borderRadius: "8px",
+            }}
+          >
+            <option value="USER">User</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
 
-        <button type="submit" disabled={loading} className="btn btn-primary w-full" style={{ marginTop: 8 }}>
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn btn-primary w-full"
+          style={{ marginTop: 8 }}
+        >
           {loading ? "Creating…" : "Register"}
         </button>
       </form>
