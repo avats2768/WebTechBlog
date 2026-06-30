@@ -32,8 +32,12 @@ export const updatePost = (id, payload) => {
   });
 };
 
-export const getPostByUser = ()=>{
+export const getMyPosts = ()=>{
   return api.get(`/post/my-post`);
+}
+
+export const getUserPosts=(userUuid)=>{
+  return api.get(`/post/user/${userUuid}`)
 }
 
 export const deletePost = (id) => {
@@ -56,6 +60,10 @@ export const addComment = (postId, comment) =>
 
 export const deleteComment = (commentId) =>
   api.delete(`/post/comments/delete/${commentId}`);
+
+export const getLikedPosts = async () => {
+  return await api.get("/post/likes/liked");
+};
 
   export const getLikeStatus = (postId) =>
   api.get("/post/likes/status", {

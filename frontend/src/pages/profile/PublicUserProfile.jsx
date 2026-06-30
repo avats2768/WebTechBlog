@@ -1,60 +1,41 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
   MapPin,
-  Calendar,
-  Link,
-  Globe,
-  Pencil,
   BadgeCheck,
   Heart,
   MessageCircle,
   FileText,
-  Bookmark,
   RotateCw,
-  LayoutGrid,
-  User,
+  Globe,
+  Link,
+  Phone,
+  MessageSquare,
 } from "lucide-react";
 import HomeLayout from "../../layouts/HomeLayout";
-import { getMyPosts } from "../../api/postsApi";
-import { getProfile } from "../../api/userApi";
+import { getUserProfile } from "../../api/userApi";
+import { getUserPosts } from "../../api/postsApi";
 import PostCard from "../../components/PostCard";
 
-// Your backend serves relative paths for profile/cover images (e.g.
-// "/public/cover/cover_img1.jpeg") but absolute URLs for post images.
-// Replace this with wherever your real API base URL lives (env var,
-// axios baseURL, config file, etc) instead of hardcoding it here.
+export default function PublicProfilePage() {
+  const { uuid } = useParams();
 
-/* ---------- Static fallback data ----------
-   These fields don't exist in the current /profile or /posts APIs yet.
-   Swap each block out once the backend supports it. */
-
-const STATIC_FALLBACK = {
-  verified: true,
-  joined: "May 2023",
-  bookmarksCount: 56,
-};
-
-/* ---------- Page ---------- */
-
-export default function ProfilePage() { 
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingPosts, setLoadingPosts] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchProfile();
     fetchPosts();
-  }, []); // run once on mount — the missing [] here was causing an infinite loop
+  }, [uuid]);
 
   async function fetchProfile() {
     try {
       setLoadingProfile(true);
-      const response = await getProfile();
-      if (response.data?.success) {
-        setProfile(response.data.data);
+      const response = await getUserProfile(uuid);
+      if (response?.success) {
+        setProfile(response.data);
       }
     } catch (error) {
       console.error("Failed to fetch profile", error);
@@ -66,7 +47,7 @@ export default function ProfilePage() {
   async function fetchPosts() {
     try {
       setLoadingPosts(true);
-      const response = await getMyPosts();
+      const response = await getUserPosts(uuid);
       if (response.data?.success) {
         setPosts(response.data.data);
       }
@@ -75,12 +56,6 @@ export default function ProfilePage() {
     } finally {
       setLoadingPosts(false);
     }
-  }
-
-  // Called after a post is deleted from inside PostCard, so the list
-  // reflects the deletion without a full page reload.
-  function handlePostDeleted(deletedId) {
-    setPosts((prev) => prev.filter((p) => p.id !== deletedId));
   }
 
   if (loadingProfile || !profile) {
@@ -124,12 +99,6 @@ export default function ProfilePage() {
       icon: MessageCircle,
       color: "var(--success)",
     },
-    {
-      label: "Bookmarks",
-      value: STATIC_FALLBACK.bookmarksCount,
-      icon: Bookmark,
-      color: "var(--warning)",
-    },
   ];
 
   return (
@@ -138,22 +107,44 @@ export default function ProfilePage() {
         {/* ---------- Cover + avatar ---------- */}
         <div
           className="profile-cover"
-          style={{ backgroundImage: `url("${encodeURI(profile.coverImage)}")` }}
+          style={{
+            backgroundImage: profile.coverImage
+              ? `url("${encodeURI(profile.coverImage)}")`
+              : undefined,
+            backgroundColor: !profile.coverImage
+              ? "var(--surface-secondary)"
+              : undefined,
+          }}
         >
           <div className="profile-avatar-wrap">
-            <img
-              src={profile.profileImage}
-              alt={name}
-              className="profile-avatar"
-            />
-            <span className="profile-status-dot" aria-label="Online" />
+            {profile.profileImage ? (
+              <img
+                src={profile.profileImage}
+                alt={name}
+                className="profile-avatar"
+              />
+            ) : (
+              <div
+                className="profile-avatar flex-center"
+                style={{
+                  background: "var(--surface)",
+                  fontWeight: 700,
+                  fontSize: 24,
+                }}
+              >
+                {(profile.firstName?.[0] || "") + (profile.lastName?.[0] || "")}
+              </div>
+            )}
           </div>
-          <button
-            className="btn btn-secondary profile-edit-btn"
-            onClick={() => navigate("/update-profile")}
-          >
-            <Pencil size={14} /> Edit Profile
-          </button>
+
+          <div className="profile-edit-btn" style={{ display: "flex", gap: 8 }}>
+            <button className="btn btn-primary" type="button">
+              <MessageSquare size={14} /> Message
+            </button>
+            <button className="btn btn-success" type="button">
+              <Phone size={14} /> Call
+            </button>
+          </div>
         </div>
 
         {/* ---------- Identity block ---------- */}
@@ -165,16 +156,20 @@ export default function ProfilePage() {
             <h1 className="heading-lg" style={{ margin: 0 }}>
               {name}
             </h1>
-            {STATIC_FALLBACK.verified && (
-              <BadgeCheck size={20} style={{ color: "var(--primary)" }} />
-            )}
+            <BadgeCheck size={20} style={{ color: "var(--primary)" }} />
           </div>
-          <p className="body-sm" style={{ marginTop: 2 }}>
-            {profile.headline}
-          </p>
-          <p className="body-md" style={{ marginTop: 10, maxWidth: 560 }}>
-            {profile.bio}
-          </p>
+
+          {profile.headline && (
+            <p className="body-sm" style={{ marginTop: 2 }}>
+              {profile.headline}
+            </p>
+          )}
+
+          {profile.bio && (
+            <p className="body-md" style={{ marginTop: 10, maxWidth: 560 }}>
+              {profile.bio}
+            </p>
+          )}
 
           <div
             className="flex-center profile-meta-row"
@@ -204,7 +199,6 @@ export default function ProfilePage() {
                 </a>
               </span>
             )}
-
             {profile.linkedinUrl && (
               <span className="body-sm profile-meta-item">
                 <Link size={14} />{" "}
@@ -219,12 +213,9 @@ export default function ProfilePage() {
                 </a>
               </span>
             )}
-            <span className="body-sm profile-meta-item">
-              <Calendar size={14} /> Joined {STATIC_FALLBACK.joined}
-            </span>
           </div>
 
-          {/* ---------- Profile Stats (moved up from sidebar) ---------- */}
+          {/* ---------- Stats ---------- */}
           <div
             className="flex-center profile-stats-row"
             style={{
@@ -244,39 +235,26 @@ export default function ProfilePage() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 8,
-                    color: "var(--text-primary)",
                   }}
                 >
                   <Icon size={16} style={{ color: stat.color }} />
-                  <strong style={{ color: "var(--text-primary)" }}>
-                    {stat.value}
-                  </strong>{" "}
-                  {stat.label}
+                  <strong>{stat.value}</strong> {stat.label}
                 </span>
               );
             })}
           </div>
         </div>
 
-        {/* ---------- Main: recent posts ---------- */}
+        {/* ---------- Posts ---------- */}
         <section className="profile-grid">
-          <div className="flex-between" style={{ marginBottom: 14 }}>
-            <h2 className="heading-md" style={{ margin: 0 }}>
-              Recent Posts
-            </h2>
-            <a
-              href="#"
-              className="body-sm text-brand"
-              style={{ textDecoration: "none" }}
-            >
-              View all
-            </a>
-          </div>
+          <h2 className="heading-md" style={{ marginBottom: 14 }}>
+            Recent Posts
+          </h2>
 
           {loadingPosts ? (
             <p className="body-sm">Loading posts…</p>
           ) : posts.length === 0 ? (
-            <p className="body-sm">No posts yet.</p>
+            <p className="body-sm">{name} hasn't shared anything yet.</p>
           ) : (
             <div className="flex-column" style={{ gap: 14 }}>
               {posts.map((post) => (
@@ -284,8 +262,7 @@ export default function ProfilePage() {
                   key={post.id}
                   post={post}
                   showBackButton={false}
-                  showEditDelete={true}
-                  onDeleted={() => handlePostDeleted(post.id)}
+                  showEditDelete={false}
                 />
               ))}
             </div>

@@ -21,6 +21,8 @@ import {
   deleteComment,
   toggleLike,
 } from "../../api/postsApi";
+
+import { toggleBookmark } from "../../api/bookmarkApi";
 import { useToast } from "../../context/ToastContext";
 
 export default function OpenPost() {
@@ -35,6 +37,7 @@ export default function OpenPost() {
 
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [bookmarked, setBookmarked] = useState(false);
 
   const [comments, setComments] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(true);
@@ -54,10 +57,13 @@ export default function OpenPost() {
       const response = await getPostById(id);
 
       if (response.data?.success) {
-        setPost(response.data.data);
-        setCommentCount(response.data.data.commentCount);
-        setLikeCount(response.data.data.likeCount);
-        setLiked(response.data.data.isLiked);
+        const postData = response.data.data;
+
+        setPost(postData);
+        setCommentCount(postData.commentCount);
+        setLikeCount(postData.likeCount);
+        setLiked(postData.isLiked);
+        setBookmarked(postData.isBookmarked);
       }
     } catch (err) {
       console.error("Failed to fetch post", err);
@@ -71,9 +77,10 @@ export default function OpenPost() {
       setCommentsLoading(true);
       const res = await getComments(id);
       const sorted = [...(res.data || [])].sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
       );
       setComments(sorted);
+      setCommentCount(sorted.length);
     } catch (err) {
       console.error("Failed to fetch comments", err);
       toast.error("Unable to load comments");
@@ -101,7 +108,6 @@ export default function OpenPost() {
       const { data } = await addComment(id, text);
       setComment("");
       await loadComments();
-      setCommentCount(data.commentCount);
       toast.success(data.message || "Comment added");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to add comment");
@@ -121,7 +127,6 @@ export default function OpenPost() {
     try {
       const { data } = await deleteComment(commentId);
       await loadComments();
-      setCommentCount(data.commentCount);
       toast.success(data.message || "Comment deleted");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to delete comment");
@@ -144,10 +149,29 @@ export default function OpenPost() {
     }
   };
 
+  const handleBookmark = async () => {
+    try {
+      await toggleBookmark(id);
+
+      setBookmarked((prev) => !prev);
+
+      toast.success(!bookmarked ? "Post bookmarked" : "Bookmark removed");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Unable to update bookmark");
+    }
+  };
+
+  const handleOpenProfile = () => {
+  navigate(`/public-profile/${post.userUuid}`);
+};
+
   if (!post) {
     return (
       <HomeLayout>
-        <div className="flex items-center justify-center" style={{ minHeight: "60vh" }}>
+        <div
+          className="flex items-center justify-center"
+          style={{ minHeight: "60vh" }}
+        >
           <div className="card p-lg">
             <p className="body-md">Post not found</p>
           </div>
@@ -163,7 +187,8 @@ export default function OpenPost() {
         <div
           className="sticky top-0 z-20 backdrop-blur-md border-default"
           style={{
-            backgroundColor: "color-mix(in srgb, var(--background) 90%, transparent)",
+            backgroundColor:
+              "color-mix(in srgb, var(--background) 90%, transparent)",
             borderTop: "none",
             borderLeft: "none",
             borderRight: "none",
@@ -176,8 +201,20 @@ export default function OpenPost() {
             </button>
 
             <div className="flex items-center gap-2 relative">
-              <button className="btn btn-ghost btn-icon">
-                <Bookmark size={18} />
+              <button
+                className="btn btn-ghost btn-icon"
+                onClick={handleBookmark}
+              >
+                <Bookmark
+                  size={18}
+                  fill={bookmarked ? "currentColor" : "none"}
+                  style={{
+                    color: bookmarked
+                      ? "var(--primary)"
+                      : "var(--text-secondary)",
+                    transition: "all .2s ease",
+                  }}
+                />
               </button>
             </div>
           </div>
@@ -195,35 +232,45 @@ export default function OpenPost() {
           )}
 
           <div className="p-lg">
-            <div className="flex items-center gap-3 mb-6">
-              {post.profileImage ? (
-                <img
-                  src={post.profileImage}
-                  alt={`${post.firstName} profile`}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-              ) : (
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm"
-                  style={{
-                    backgroundColor: "color-mix(in srgb, var(--primary) 14%, transparent)",
-                    color: "var(--primary)",
-                  }}
-                >
-                  {initials(post.firstName)}
-                </div>
-              )}
-              <div>
-                <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                  {post.firstName} {post.lastName}
-                </p>
-                <p className="body-sm">
-                  {post.designation} · {timeAgo(post.createdAt)}
-                </p>
-              </div>
-            </div>
+            <div
+  className="flex items-center gap-3 mb-6 cursor-pointer"
+  onClick={handleOpenProfile}
+>
+  {post.profileImage ? (
+    <img
+      src={post.profileImage}
+      alt={`${post.firstName} profile`}
+      className="w-10 h-10 rounded-full object-cover"
+    />
+  ) : (
+    <div
+      className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm"
+      style={{
+        backgroundColor:
+          "color-mix(in srgb, var(--primary) 14%, transparent)",
+        color: "var(--primary)",
+      }}
+    >
+      {initials(post.firstName)}
+    </div>
+  )}
+  <div>
+    <p
+      className="text-sm font-semibold"
+      style={{ color: "var(--text-primary)" }}
+    >
+      {post.firstName} {post.lastName}
+    </p>
+    <p className="body-sm">
+      {post.designation} · {timeAgo(post.createdAt)}
+    </p>
+  </div>
+</div>
 
-            <h1 className="heading-xl" style={{ marginBottom: "16px", color: "var(--text-primary)" }}>
+            <h1
+              className="heading-xl"
+              style={{ marginBottom: "16px", color: "var(--text-primary)" }}
+            >
               {post.title}
             </h1>
 
@@ -240,7 +287,10 @@ export default function OpenPost() {
             </div>
 
             {post.skills?.length > 0 && (
-              <div className="flex flex-wrap gap-2" style={{ marginTop: "24px" }}>
+              <div
+                className="flex flex-wrap gap-2"
+                style={{ marginTop: "24px" }}
+              >
                 {post.skills.map((skill) => (
                   <span key={skill} className="badge">
                     {skill}
@@ -251,7 +301,10 @@ export default function OpenPost() {
 
             {post.code && (
               <div style={{ marginTop: "32px" }}>
-                <div className="flex items-center justify-between" style={{ marginBottom: "12px" }}>
+                <div
+                  className="flex items-center justify-between"
+                  style={{ marginBottom: "12px" }}
+                >
                   <h3 className="heading-md">Code</h3>
                   <button
                     className={`btn ${copied ? "btn-success" : "btn-outline"}`}
@@ -320,32 +373,44 @@ export default function OpenPost() {
             {commentsLoading ? (
               <p className="body-sm">Loading comments…</p>
             ) : comments.length === 0 ? (
-              <p className="body-sm">No comments yet. Be the first to comment.</p>
+              <p className="body-sm">
+                No comments yet. Be the first to comment.
+              </p>
             ) : (
               comments.map((c) => (
                 <div
                   key={c.id}
                   className="flex items-start justify-between gap-3"
-                  style={{ borderBottom: "1px solid var(--border)", paddingBottom: "12px" }}
+                  style={{
+                    borderBottom: "1px solid var(--border)",
+                    paddingBottom: "12px",
+                  }}
                 >
                   <div className="flex items-start gap-3">
                     <div
                       className="w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs flex-shrink-0"
                       style={{
-                        backgroundColor: "color-mix(in srgb, var(--primary) 14%, transparent)",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--primary) 14%, transparent)",
                         color: "var(--primary)",
                       }}
                     >
                       {initials(c.firstName || "U")}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                      <p
+                        className="text-sm font-semibold"
+                        style={{ color: "var(--text-primary)" }}
+                      >
                         {commentAuthorLabel(c)}{" "}
                         <span className="body-sm" style={{ fontWeight: 400 }}>
                           · {c.createdAt ? timeAgo(c.createdAt) : "just now"}
                         </span>
                       </p>
-                      <p className="body-sm" style={{ color: "var(--text-primary)" }}>
+                      <p
+                        className="body-sm"
+                        style={{ color: "var(--text-primary)" }}
+                      >
                         {c.comment}
                       </p>
                     </div>
@@ -355,7 +420,11 @@ export default function OpenPost() {
                     <Trash2
                       size={14}
                       className="cursor-pointer"
-                      style={{ color: "var(--danger)", flexShrink: 0, marginTop: 4 }}
+                      style={{
+                        color: "var(--danger)",
+                        flexShrink: 0,
+                        marginTop: 4,
+                      }}
                       onClick={() => handleDeleteComment(c.id)}
                     />
                   )}
@@ -369,19 +438,28 @@ export default function OpenPost() {
         <div
           className="sticky bottom-0 backdrop-blur-md border-default"
           style={{
-            backgroundColor: "color-mix(in srgb, var(--background) 92%, transparent)",
+            backgroundColor:
+              "color-mix(in srgb, var(--background) 92%, transparent)",
             borderBottom: "none",
             borderLeft: "none",
             borderRight: "none",
             marginTop: "20px",
           }}
         >
-          <div className="flex items-center justify-center gap-10 py-4" style={{ color: "var(--text-secondary)" }}>
-            <div className="flex items-center gap-2 cursor-pointer" onClick={handleLike}>
+          <div
+            className="flex items-center justify-center gap-10 py-4"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            <div
+              className="flex items-center gap-2 cursor-pointer"
+              onClick={handleLike}
+            >
               <Heart
                 size={18}
                 fill={liked ? "currentColor" : "none"}
-                style={{ color: liked ? "var(--danger)" : "var(--text-secondary)" }}
+                style={{
+                  color: liked ? "var(--danger)" : "var(--text-secondary)",
+                }}
               />
               {likeCount}
             </div>
@@ -391,10 +469,10 @@ export default function OpenPost() {
               {commentCount}
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <Eye size={18} />
               {post.viewCount}
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

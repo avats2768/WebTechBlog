@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, Bell, MessageSquare, ChevronDown, LogOut } from "lucide-react";
+import { Search, Plus, Bell, MessageSquare, ChevronDown, LogOut, Menu } from "lucide-react";
 
 import { logout } from "../../features/auth/authSlice"; // adjust path if needed
 import { ThemeToggle } from "../../components/common/ThemeToggle"; // adjust path if needed
 
-export default function TopNav({ notificationCount = 3 }) {
+export default function TopNav({ notificationCount = 3, onMenuClick = () => {} }) {
   const storeUser = useSelector((state) => state.auth.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -40,12 +40,21 @@ export default function TopNav({ notificationCount = 3 }) {
 
   return (
     <header
-      className="sticky w-full top-0 z-40"
+      className="sticky w-full top-0 z-30"
       style={{ backgroundColor: "var(--background)", borderBottom: "1px solid var(--border)" }}
     >
-      <div className="flex items-center gap-4 h-16 px-6">
+      <div className="flex items-center gap-4 h-16 px-4 md:px-6 w-full">
+        {/* Hamburger, mobile only */}
+        <button
+          onClick={onMenuClick}
+          className="lg:hidden btn btn-ghost btn-icon shrink-0"
+          aria-label="Open menu"
+        >
+          <Menu size={22} />
+        </button>
+
         {/* Search */}
-        <form onSubmit={handleSearchSubmit} className="flex-1 max-w-xl">
+        <form onSubmit={handleSearchSubmit} className="flex-1 min-w-0 max-w-xl">
           <div
             className="flex items-center gap-2 h-10 px-3"
             style={{ backgroundColor: "var(--surface)", borderRadius: "var(--radius-md)" }}
@@ -56,7 +65,7 @@ export default function TopNav({ notificationCount = 3 }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search articles, people, tags..."
-              className="bg-transparent outline-none border-none flex-1 text-sm"
+              className="bg-transparent outline-none border-none flex-1 text-sm min-w-0"
               style={{ color: "var(--text-primary)" }}
             />
             <kbd
@@ -69,10 +78,10 @@ export default function TopNav({ notificationCount = 3 }) {
         </form>
 
         {/* Right side actions */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 ml-auto">
           <button className="btn btn-primary" onClick={() => navigate("/save-post")}>
             <Plus size={16} />
-             Post
+            <span className="hidden sm:inline"> Post</span>
           </button>
 
           <ThemeToggle />
@@ -95,7 +104,7 @@ export default function TopNav({ notificationCount = 3 }) {
 
           <button
             onClick={() => navigate("/messages")}
-            className="btn btn-ghost btn-icon"
+            className="btn btn-ghost btn-icon hidden sm:inline-flex"
             title="Messages"
           >
             <MessageSquare size={18} />
@@ -109,7 +118,10 @@ export default function TopNav({ notificationCount = 3 }) {
             >
               <span
                 className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold overflow-hidden"
-                style={{ backgroundColor: "color-mix(in srgb, var(--primary) 14%, transparent)", color: "var(--primary)" }}
+                style={{
+                  backgroundColor: "color-mix(in srgb, var(--primary) 14%, transparent)",
+                  color: "var(--primary)",
+                }}
               >
                 {displayName.slice(0, 2).toUpperCase()}
               </span>

@@ -11,6 +11,10 @@ import { ThemeDemo } from "../pages/ThemeDemo";
 
 import ProtectedRoute from "./ProtectedRoute";
 import UpdateProfile from "../pages/profile/UpdateProfile";
+import Bookmarks from "../pages/post/BookMark";
+import LikedPosts from "../pages/post/LikedPost";
+import HistoryPage from "../pages/history/History";
+import PublicProfilePage from "../pages/profile/PublicUserProfile";
 
 export default function AppRoutes() {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -53,10 +57,46 @@ export default function AppRoutes() {
       />
 
       <Route
+        path="/public-profile/:uuid"
+        element={
+          <ProtectedRoute>
+            <PublicProfilePage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/update-profile"
         element={
           <ProtectedRoute>
             <UpdateProfile />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/bookmarks"
+        element={
+          <ProtectedRoute>
+            <Bookmarks />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/liked"
+        element={
+          <ProtectedRoute>
+            <LikedPosts />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/history"
+        element={
+          <ProtectedRoute>
+            <HistoryPage />
           </ProtectedRoute>
         }
       />

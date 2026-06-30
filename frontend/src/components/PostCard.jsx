@@ -21,6 +21,7 @@ import {
   addComment,
   deleteComment,
 } from "../api/postsApi";
+import { toggleBookmark } from "../api/bookmarkApi";
 import { useConfirm } from "../context/ConfirmContext";
 import { useToast } from "../context/ToastContext";
 
@@ -67,6 +68,7 @@ export default function PostCard({
 
   const [liked, setLiked] = useState(post.isLiked);
   const [likeCount, setLikeCount] = useState(post.likeCount);
+  const [bookmarked, setBookmarked] = useState(post.isBookmarked);
 
   const [comments, setComments] = useState(post.comments || []);
   const [showComments, setShowComments] = useState(false);
@@ -177,22 +179,21 @@ export default function PostCard({
   };
 
   const handleAddComment = async () => {
-  const text = comment.trim();
-  if (!text || submitting) return;
+    const text = comment.trim();
+    if (!text || submitting) return;
 
-  try {
-    setSubmitting(true);
-    const { data } = await addComment(post.id, text);
-    setComment("");
-    await loadComments();
-    setCommentCount(data.commentCount);
-    toast.success(data.message || "Comment added");
-  } catch (err) {
-    toast.error(err.response?.data?.message || "Failed to add comment");
-  } finally {
-    setSubmitting(false);
-  }
-};
+    try {
+      setSubmitting(true);
+      const { data } = await addComment(post.id, text);
+      setComment("");
+      await loadComments();
+      toast.success(data.message || "Comment added");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to add comment");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleCommentKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -202,21 +203,43 @@ export default function PostCard({
   };
 
   const handleDeleteComment = async (e, commentId) => {
-  e.stopPropagation();
-  try {
-    const { data } = await deleteComment(commentId);
-    await loadComments();
-    setCommentCount(data.commentCount);
-    toast.success(data.message || "Comment deleted");
-  } catch (err) {
-    toast.error(err.response?.data?.message || "Failed to delete comment");
-  }
-};
+    e.stopPropagation();
+    try {
+      const { data } = await deleteComment(commentId);
+      await loadComments();
+      toast.success(data.message || "Comment deleted");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete comment");
+    }
+  };
 
   const commentAuthorLabel = (c) => {
     if (c.firstName) return `${c.firstName} ${c.lastName || ""}`.trim();
     if (resolvedUserId && c.userId === resolvedUserId) return "You";
     return `User #${c.userId}`;
+  };
+
+  const handleBookmark = async (e) => {
+    e.stopPropagation();
+
+    try {
+      await toggleBookmark(post.id);
+
+      const newValue = !bookmarked;
+
+      setBookmarked(newValue);
+
+      onBookmarkClick?.(post, newValue);
+
+      toast.success(newValue ? "Post bookmarked" : "Bookmark removed");
+    } catch (err) {
+      toast.error("Unable to update bookmark");
+    }
+  };
+
+  const handleOpenProfile = (e) => {
+    e.stopPropagation();
+    navigate(`/public-profile/${post.userUuid}`);
   };
 
   return (
@@ -225,7 +248,10 @@ export default function PostCard({
       onClick={() => handleOpenPost?.(post)}
     >
       <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
+        <div
+          className="flex items-center gap-3 cursor-pointer"
+          onClick={handleOpenProfile}
+        >
           {post.profileImage ? (
             <img
               src={post.profileImage}
@@ -260,13 +286,13 @@ export default function PostCard({
         {/* Bookmark + three-dot menu */}
         <div className="flex items-center gap-3 relative">
           <Bookmark
-            size={17}
-            className="cursor-pointer"
-            style={{ color: "var(--text-secondary)" }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onBookmarkClick?.(post);
+            size={18}
+            fill={bookmarked ? "currentColor" : "none"}
+            className="cursor-pointer transition-colors"
+            style={{
+              color: bookmarked ? "var(--primary)" : "var(--text-secondary)",
             }}
+            onClick={handleBookmark}
           />
           <MoreHorizontal
             size={17}
@@ -375,7 +401,7 @@ export default function PostCard({
               style={{ color: liked ? "#ef4444" : "var(--text-secondary)" }}
               onClick={handleLike}
             />
-            {likeCount ?? post.likeCount}
+            {likeCount}
           </span>
           <span className="flex items-center gap-1.5">
             <MessageCircle
@@ -388,10 +414,10 @@ export default function PostCard({
               }}
               onClick={handleCommentClick}
             />{" "}
-            {commentCount ?? post.commentCount}
+            {commentCount}
           </span>
         </div>
-        <span className="body-sm">{post.viewCount} views</span>
+        {/* <span className="body-sm">{post.viewCount} views</span> */}
       </div>
 
       {/* Comment thread — only rendered once toggled open */}
