@@ -1,6 +1,7 @@
 package com.webtechblog.backend.service;
 
 import com.webtechblog.backend.dto.ProfileResponse;
+import com.webtechblog.backend.dto.PublicProfileResponse;
 import com.webtechblog.backend.dto.UpdateProfileRequest;
 import com.webtechblog.backend.entity.ProfileEntity;
 import com.webtechblog.backend.entity.UserEntity;
@@ -84,6 +85,68 @@ public class ProfileService {
 
         response.setGithubUrl(profile.getGithubUrl());
         response.setLinkedinUrl(profile.getLinkedinUrl());
+
+        return response;
+    }
+
+    public PublicProfileResponse getPublicProfile(String uuid) {
+
+        // Find user using UUID
+        UserEntity user = userRepository
+                .findByUuid(uuid)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        // Optional Security Check
+        if (!Boolean.TRUE.equals(user.getStatus())) {
+            throw new RuntimeException("User not found");
+        }
+
+        // Find profile using userId
+        ProfileEntity profile = profileRepository
+                .findByUserId(user.getId())
+                .orElseThrow(() ->
+                        new RuntimeException("Profile not found"));
+
+        PublicProfileResponse response =
+                new PublicProfileResponse();
+
+        // User Table
+        response.setUuid(user.getUuid());
+        response.setUsername(user.getUsername());
+
+        // Profile Table
+        response.setFirstName(profile.getFirstName());
+        response.setLastName(profile.getLastName());
+
+        response.setHeadline(profile.getHeadline());
+        response.setBio(profile.getBio());
+
+        response.setProfileImage(
+                baseUrl + contextPath + profile.getProfileImage()
+        );
+
+        response.setCoverImage(
+                baseUrl + contextPath + profile.getCoverImage()
+        );
+
+        response.setSkills(profile.getSkills());
+
+        response.setCompany(profile.getCompany());
+        response.setDesignation(profile.getDesignation());
+
+        response.setExperienceYears(
+                profile.getExperienceYears()
+        );
+
+        response.setCity(profile.getCity());
+        response.setState(profile.getState());
+        response.setCountry(profile.getCountry());
+
+        response.setWebsiteUrl(profile.getWebsiteUrl());
+        response.setGithubUrl(profile.getGithubUrl());
+        response.setLinkedinUrl(profile.getLinkedinUrl());
+        response.setTwitterUrl(profile.getTwitterUrl());
 
         return response;
     }

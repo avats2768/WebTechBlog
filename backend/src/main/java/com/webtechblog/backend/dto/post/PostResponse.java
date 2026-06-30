@@ -22,12 +22,16 @@ public class PostResponse {
     private Long viewCount;
     private Long likeCount;
     private Long commentCount;
+
     private Boolean isLiked;
+    private Boolean isBookmarked;
+
     private List<PostCommentResponse> comments;
 
     private String username;
     private String firstName;
     private String lastName;
+    private String userUuid;
     private String headline;
     private String profileImage;
     private String company;

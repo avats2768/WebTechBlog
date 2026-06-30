@@ -1,6 +1,6 @@
 package com.webtechblog.backend.dto;
 
-import com.webtechblog.backend.entity.RoleEntity;
+import com.webtechblog.backend.enums.RoleEntity;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 

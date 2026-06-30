@@ -1,7 +1,10 @@
 package com.webtechblog.backend.service;
 
+import com.webtechblog.backend.dto.post.PostResponse;
 import com.webtechblog.backend.entity.PostLikeEntity;
 import com.webtechblog.backend.entity.UserEntity;
+import com.webtechblog.backend.enums.ActivityType;
+import com.webtechblog.backend.helper.PostResponseHelper;
 import com.webtechblog.backend.repository.PostLikeRepository;
 import com.webtechblog.backend.repository.PostRepository;
 import jakarta.transaction.Transactional;
@@ -11,13 +14,18 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import com.webtechblog.backend.repository.UserRepository;
 
+import java.util.List;
+import java.util.Objects;
+
 @Service
 @RequiredArgsConstructor
 public class PostLikeService {
 
+    private final PostResponseHelper postResponseHelper;
     private final PostLikeRepository postLikeRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final HistoryWriteService historyService;
 
     @Transactional
     public boolean toggleLike(Long postId) {
@@ -72,6 +80,13 @@ public class PostLikeService {
         // Update only the like_count column
         postRepository.updateLikeCount(postId, likeCount);
 
+        if (liked) {
+            historyService.saveHistory(
+                    postId,
+                    ActivityType.LIKE
+            );
+        }
+
         return liked;
     }
 
@@ -79,7 +94,7 @@ public class PostLikeService {
         return postLikeRepository.countByPostIdAndStatus(postId, 1);
     }
 
-    public boolean isLiked(Long postId) {
+    public List<PostResponse> getMyLikedPosts() {
 
         Authentication authentication =
                 SecurityContextHolder
@@ -88,17 +103,19 @@ public class PostLikeService {
 
         String email = authentication.getName();
 
-        UserEntity user =
+        UserEntity loggedInUser =
                 userRepository
                         .findByEmail(email)
                         .orElseThrow(() ->
-                                new IllegalArgumentException("User not found"));
+                                new RuntimeException("User not found"));
 
-        Long userId = user.getId();
-
-        PostLikeEntity like =
-                postLikeRepository.findByPostIdAndUserId(postId, userId);
-
-        return like != null && like.getStatus() == 1;
+        return postLikeRepository
+                .findAllByUserIdAndStatusOrderByCreatedAtDesc(loggedInUser.getId(),1
+                )
+                .stream()
+                .map(like -> postRepository.findById(like.getPostId()).orElse(null))
+                .filter(Objects::nonNull)
+                .map(postResponseHelper::build)
+                .toList();
     }
 }

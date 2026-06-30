@@ -3,6 +3,7 @@ package com.webtechblog.backend.controller.posts;
 import com.webtechblog.backend.dto.ApiResponse;
 import com.webtechblog.backend.dto.post.PostResponse;
 import com.webtechblog.backend.entity.PostEntity;
+import com.webtechblog.backend.helper.PostResponseHelper;
 import com.webtechblog.backend.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,8 @@ import java.util.List;
 public class PostController {
 
     private final PostService postService;
+    private final PostResponseHelper postResponseHelper;
+
 
     @PostMapping("/save")
     public ApiResponse<PostResponse> savePost(
@@ -39,7 +42,7 @@ public class PostController {
         return ApiResponse.<PostResponse>builder()
                 .success(true)
                 .message("Post created successfully")
-                .data(postService.convertToResponse(post))
+                .data(postResponseHelper.build(post))
                 .build();
     }
 
@@ -50,6 +53,16 @@ public class PostController {
                 .success(true)
                 .message("Posts fetched successfully")
                 .data(postService.getAllPosts())
+                .build();
+    }
+
+    @GetMapping("/user/{userUuid}")
+    public ApiResponse<List<PostResponse>> getUserPost(@PathVariable String userUuid) {
+
+            return ApiResponse.<List<PostResponse>>builder()
+                .success(true)
+                .message("User Posts fetched successfully")
+                .data(postService.getUserPosts(userUuid))
                 .build();
     }
 
@@ -96,7 +109,7 @@ public class PostController {
         return ApiResponse.<PostResponse>builder()
                 .success(true)
                 .message("Post updated successfully")
-                .data(postService.convertToResponse(post))
+                .data(postResponseHelper.build(post))
                 .build();
     }
 

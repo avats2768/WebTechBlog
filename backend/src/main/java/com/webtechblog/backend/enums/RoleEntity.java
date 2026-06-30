@@ -1,4 +1,4 @@
-package com.webtechblog.backend.entity;
+package com.webtechblog.backend.enums;
 
 public enum RoleEntity {
     USER,

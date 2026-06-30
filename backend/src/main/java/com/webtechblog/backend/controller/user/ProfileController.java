@@ -2,6 +2,7 @@ package com.webtechblog.backend.controller.user;
 
 import com.webtechblog.backend.dto.ApiResponse;
 import com.webtechblog.backend.dto.ProfileResponse;
+import com.webtechblog.backend.dto.PublicProfileResponse;
 import com.webtechblog.backend.dto.UpdateProfileRequest;
 import com.webtechblog.backend.entity.ProfileEntity;
 import com.webtechblog.backend.service.ProfileService;
@@ -25,6 +26,18 @@ public class ProfileController {
                 .data(profileService.getProfile())
                 .build();
 
+    }
+
+    @GetMapping("/{uuid}")
+    public ApiResponse<PublicProfileResponse> getPublicProfile(
+            @PathVariable String uuid
+    ) {
+
+        return ApiResponse.<PublicProfileResponse>builder()
+                .success(true)
+                .message("Profile fetched successfully")
+                .data(profileService.getPublicProfile(uuid))
+                .build();
     }
 
 

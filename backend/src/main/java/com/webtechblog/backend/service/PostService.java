@@ -1,15 +1,11 @@
 package com.webtechblog.backend.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webtechblog.backend.dto.post.PostResponse;
 import com.webtechblog.backend.entity.PostEntity;
-import com.webtechblog.backend.entity.SkillEntity;
 import com.webtechblog.backend.entity.UserEntity;
-import com.webtechblog.backend.entity.ProfileEntity;
-import com.webtechblog.backend.repository.ProfileRepository;
+import com.webtechblog.backend.enums.ActivityType;
+import com.webtechblog.backend.helper.PostResponseHelper;
 import com.webtechblog.backend.repository.PostRepository;
-import com.webtechblog.backend.repository.SkillRepository;
 import com.webtechblog.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,12 +23,10 @@ import java.util.*;
 @RequiredArgsConstructor
 public class PostService {
 
+    private final PostResponseHelper postResponseHelper;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-    private final SkillRepository skillRepository;
-    private final ProfileRepository profileRepository;
-    private final PostLikeService postLikeService;
-    private final PostCommentService postCommentService;
+    private final HistoryWriteService historyService;
 
     @Value("${server.servlet.context-path}")
     private String contextPath;
@@ -102,130 +96,40 @@ public class PostService {
         return postRepository.save(post);
     }
 
-    private List<String> getSkillNames(String skillsJson) {
-
-        try {
-
-            ObjectMapper objectMapper =
-                    new ObjectMapper();
-
-            List<Long> skillIds =
-                    objectMapper.readValue(
-                            skillsJson,
-                            new TypeReference<List<Long>>() {}
-                    );
-
-            return skillRepository
-                    .findAllById(skillIds)
-                    .stream()
-                    .map(SkillEntity::getName)
-                    .toList();
-
-        } catch (Exception e) {
-
-            return List.of();
-        }
-    }
-
-    public PostResponse convertToResponse(PostEntity post) {
-
-        UserEntity user =
-                userRepository
-                        .findById(post.getUserId())
-                        .orElse(null);
-
-        ProfileEntity profile =
-                profileRepository
-                        .findByUserId(post.getUserId())
-                        .orElse(null);
-
-        return PostResponse.builder()
-                .id(post.getId())
-                .uuid(post.getUuid())
-                .title(post.getTitle())
-                .description(post.getDescription())
-                .code(post.getCode())
-
-                .imageUrl(
-                        post.getImageUrl() != null
-                                ? baseUrl + contextPath + post.getImageUrl()
-                                : null
-                )
-
-                .viewCount(post.getViewCount())
-                .likeCount(post.getLikeCount())
-                .commentCount(post.getCommentCount())
-                .isLiked(postLikeService.isLiked(post.getId()))
-                .comments(postCommentService.getComments(post.getId()))
-
-                .username(
-                        user != null
-                                ? user.getUsername()
-                                : "Unknown User"
-                )
-
-                .firstName(
-                        profile != null
-                                ? profile.getFirstName()
-                                : null
-                )
-
-                .lastName(
-                        profile != null
-                                ? profile.getLastName()
-                                : null
-                )
-
-                .headline(
-                        profile != null
-                                ? profile.getHeadline()
-                                : null
-                )
-
-                .company(
-                        profile != null
-                                ? profile.getCompany()
-                                : null
-                )
-
-                .designation(
-                        profile != null
-                                ? profile.getDesignation()
-                                : null
-                )
-
-                .profileImage(
-                        profile != null &&
-                                profile.getProfileImage() != null
-                                ? baseUrl + contextPath + profile.getProfileImage()
-                                : null
-                )
-
-                .skills(
-                        getSkillNames(post.getSkills())
-                )
-
-                .createdAt(post.getCreatedAt())
-                .build();
-    }
-
     public List<PostResponse> getAllPosts() {
 
         return postRepository
                 .findAllByOrderByCreatedAtDesc()
                 .stream()
-                .map(this::convertToResponse)
+                .map(postResponseHelper::build)
                 .toList();
     }
 
-    public PostResponse getPost(long id) {
+    public List<PostResponse> getUserPosts(String userUuid) {
+
+        UserEntity user = userRepository.findByUuid(userUuid)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return postRepository
+                .findByUserIdOrderByCreatedAtDesc(user.getId())
+                .stream()
+                .map(postResponseHelper::build)
+                .toList();
+    }
+
+    public PostResponse getPost(Long id) {
 
         PostEntity post = postRepository
                 .findById(id)
                 .orElseThrow(() ->
                         new RuntimeException("Post not found"));
 
-        return convertToResponse(post);
+        historyService.saveHistory(
+                post.getId(),
+                ActivityType.VIEW
+        );
+
+        return postResponseHelper.build(post);
     }
 
     public PostEntity updatePost(
@@ -313,7 +217,7 @@ public class PostService {
         return postRepository
                 .findByUserIdOrderByCreatedAtDesc(user.getId())
                 .stream()
-                .map(this::convertToResponse)
+                .map(postResponseHelper::build)
                 .toList();
     }
 

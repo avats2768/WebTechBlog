@@ -1,5 +1,6 @@
 package com.webtechblog.backend.controller.skills;
 
+
 import com.webtechblog.backend.entity.SkillEntity;
 import com.webtechblog.backend.service.SkillService;
 import lombok.RequiredArgsConstructor;

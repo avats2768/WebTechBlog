@@ -2,7 +2,6 @@
 
     import com.webtechblog.backend.dto.post.PostCommentResponse;
     import com.webtechblog.backend.entity.PostCommentEntity;
-    import com.webtechblog.backend.entity.PostEntity;
     import com.webtechblog.backend.entity.ProfileEntity;
     import com.webtechblog.backend.entity.UserEntity;
     import com.webtechblog.backend.repository.PostCommentRepository;
@@ -25,6 +24,7 @@
             private final PostRepository postRepository;
             private final UserRepository userRepository;
             private final ProfileRepository profileRepository;
+            private final HistoryWriteService historyService;
 
         public PostCommentResponse addComment(
                 Long postId,
@@ -57,6 +57,11 @@
             // Save comment
             PostCommentEntity savedComment =
                     postCommentRepository.save(entity);
+
+            historyService.saveCommentHistory(
+                    postId,
+                    savedComment.getId()
+            );
 
             // Calculate latest comment count
             long commentCount =

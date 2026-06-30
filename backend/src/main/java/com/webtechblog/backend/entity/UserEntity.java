@@ -1,5 +1,6 @@
 package com.webtechblog.backend.entity;
 
+import com.webtechblog.backend.enums.RoleEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

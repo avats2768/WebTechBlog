@@ -15,4 +15,6 @@ public interface UserRepository
     Boolean existsByEmail(String email);
 
     Boolean existsByUsername(String username);
+
+    Optional<UserEntity> findByUuid(String uuid);
 }
