@@ -234,21 +234,22 @@ public class ProfileService {
         }
 
         // Profile Image Upload
-        if (
-                request.getProfileImage() != null &&
-                        !request.getProfileImage().isEmpty()
-        ) {
+        if (request.getProfileImage() != null &&
+                !request.getProfileImage().isEmpty()) {
 
             try {
 
-                String fileName =
-                        UUID.randomUUID()
-                                + "_"
-                                + request.getProfileImage()
-                                .getOriginalFilename();
+                // Delete old profile image
+                deleteOldImage(
+                        profile.getProfileImage(),
+                        "/public/profile/default_profile.png"
+                );
 
-                Path uploadPath =
-                        Paths.get("public/profile");
+                String fileName =
+                        UUID.randomUUID() + "_" +
+                                request.getProfileImage().getOriginalFilename();
+
+                Path uploadPath = Paths.get("public/profile");
 
                 if (!Files.exists(uploadPath)) {
                     Files.createDirectories(uploadPath);
@@ -260,35 +261,33 @@ public class ProfileService {
                         StandardCopyOption.REPLACE_EXISTING
                 );
 
-                profile.setProfileImage(
-                        "/public/profile/" + fileName
-                );
+                String imagePath = "/public/profile/" + fileName;
+
+                user.setProfileImage(imagePath);
+                profile.setProfileImage(imagePath);
 
             } catch (IOException e) {
-
-                throw new RuntimeException(
-                        "Failed to upload profile image",
-                        e
-                );
+                throw new RuntimeException("Failed to upload profile image", e);
             }
         }
 
         // Cover Image Upload
-        if (
-                request.getCoverImage() != null &&
-                        !request.getCoverImage().isEmpty()
-        ) {
+        if (request.getCoverImage() != null &&
+                !request.getCoverImage().isEmpty()) {
 
             try {
 
-                String fileName =
-                        UUID.randomUUID()
-                                + "_"
-                                + request.getCoverImage()
-                                .getOriginalFilename();
+                // Delete old cover image
+                deleteOldImage(
+                        profile.getCoverImage(),
+                        "/public/cover/default_cover.jpg"
+                );
 
-                Path uploadPath =
-                        Paths.get("public/cover");
+                String fileName =
+                        UUID.randomUUID() + "_" +
+                                request.getCoverImage().getOriginalFilename();
+
+                Path uploadPath = Paths.get("public/cover");
 
                 if (!Files.exists(uploadPath)) {
                     Files.createDirectories(uploadPath);
@@ -305,13 +304,14 @@ public class ProfileService {
                 );
 
             } catch (IOException e) {
-
                 throw new RuntimeException(
                         "Failed to upload cover image",
                         e
                 );
             }
         }
+
+                userRepository.save(user);
 
         return profileRepository.save(profile);
     }
@@ -338,5 +338,29 @@ public class ProfileService {
                                 new RuntimeException("Profile not found"));
 
         profileRepository.delete(profile);
+    }
+
+    private void deleteOldImage(String imagePath, String defaultImagePath) {
+
+        if (imagePath == null || imagePath.isBlank()) {
+            return;
+        }
+
+        // Don't delete the default image
+        if (imagePath.equals(defaultImagePath)) {
+            return;
+        }
+
+        try {
+
+            Path path = Paths.get(imagePath.substring(1)); // remove leading "/"
+
+            if (Files.exists(path)) {
+                Files.delete(path);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

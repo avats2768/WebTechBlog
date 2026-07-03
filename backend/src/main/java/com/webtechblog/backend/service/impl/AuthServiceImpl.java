@@ -14,6 +14,7 @@ import com.webtechblog.backend.service.AuthService;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.springframework.stereotype.Service;
@@ -28,6 +29,12 @@ public class AuthServiceImpl
     private final PasswordEncoder passwordEncoder;
 
     private final JwtService jwtService;
+
+    @Value("${server.servlet.context-path}")
+    private String contextPath;
+
+    @Value("${app.base-url}")
+    private String baseUrl;
 
     @Override
     public AuthResponse register(
@@ -57,6 +64,7 @@ public class AuthServiceImpl
                                         request.password()
                                 )
                         )
+                        .profileImage("/public/profile/default-profile.jpeg")
                         .build();
 
         UserEntity savedUser =
@@ -86,6 +94,7 @@ public class AuthServiceImpl
                 savedUser.getId(),
                 savedUser.getUsername(),
                 savedUser.getEmail(),
+                baseUrl + contextPath + savedUser.getProfileImage(),
                 savedUser.getRoleEntity()
         );
     }
@@ -129,6 +138,7 @@ public class AuthServiceImpl
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
+                baseUrl + contextPath + user.getProfileImage(),
                 user.getRoleEntity()
         );
     }

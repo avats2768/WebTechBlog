@@ -47,6 +47,7 @@ export default function Register() {
             userId: data.userId,
             username: data.username,
             email: data.email,
+            profileImage:data.profileImage,
             role: data.role,
           },
         }),

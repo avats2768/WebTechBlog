@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { setProfileImage } from "../../features/auth/authSlice"; // adjust path
 import { useNavigate } from "react-router-dom";
 import {
   MapPin,
@@ -37,12 +39,14 @@ const STATIC_FALLBACK = {
 
 /* ---------- Page ---------- */
 
-export default function ProfilePage() { 
+export default function ProfilePage() {
+  const storeUser = useSelector((state) => state.auth.user);
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     fetchProfile();
@@ -55,6 +59,7 @@ export default function ProfilePage() {
       const response = await getProfile();
       if (response.data?.success) {
         setProfile(response.data.data);
+        dispatch(setProfileImage(response.data.data.profileImage || null));
       }
     } catch (error) {
       console.error("Failed to fetch profile", error);

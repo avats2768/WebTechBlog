@@ -16,10 +16,12 @@ import HomeLayout from "../../layouts/HomeLayout";
 import { getUserProfile } from "../../api/userApi";
 import { getUserPosts } from "../../api/postsApi";
 import PostCard from "../../components/PostCard";
+import { createPrivateChat } from "../../api/chatApi";
+import { useNavigate } from "react-router-dom";
 
 export default function PublicProfilePage() {
   const { uuid } = useParams();
-
+const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -57,6 +59,27 @@ export default function PublicProfilePage() {
       setLoadingPosts(false);
     }
   }
+
+  const handleMessage = async () => {
+
+  try {
+
+    const room =
+      await createPrivateChat(
+        profile.uuid
+      );
+
+    navigate("/chat", {
+      state: room,
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
+
+};
 
   if (loadingProfile || !profile) {
     return (
@@ -138,9 +161,14 @@ export default function PublicProfilePage() {
           </div>
 
           <div className="profile-edit-btn" style={{ display: "flex", gap: 8 }}>
-            <button className="btn btn-primary" type="button">
-              <MessageSquare size={14} /> Message
-            </button>
+            <button
+    className="btn btn-primary"
+    type="button"
+    onClick={handleMessage}
+>
+    <MessageSquare size={14} />
+    Message
+</button>
             <button className="btn btn-success" type="button">
               <Phone size={14} /> Call
             </button>

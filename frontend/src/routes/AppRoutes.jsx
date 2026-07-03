@@ -15,6 +15,8 @@ import Bookmarks from "../pages/post/BookMark";
 import LikedPosts from "../pages/post/LikedPost";
 import HistoryPage from "../pages/history/History";
 import PublicProfilePage from "../pages/profile/PublicUserProfile";
+import ChatPage from "../pages/chat/ChatPage";
+import ChatList from "../pages/chat/ChatList";
 
 export default function AppRoutes() {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -97,6 +99,24 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <HistoryPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/chat"
+        element={
+          <ProtectedRoute>
+            <ChatPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/messages"
+        element={
+          <ProtectedRoute>
+            <ChatList />
           </ProtectedRoute>
         }
       />

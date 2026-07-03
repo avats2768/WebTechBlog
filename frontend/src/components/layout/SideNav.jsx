@@ -21,8 +21,6 @@ import {
 // simple dummy counts for now, replace with real data later
 const mainLinks = [
   { label: "Home", icon: Home, path: "/dashboard" },
-  { label: "Explore", icon: Compass, path: "/explore" },
-  { label: "Communities", icon: Users, path: "/communities" },
   { label: "Bookmarks", icon: Bookmark, path: "/bookmarks" },
   { label: "Liked Articles", icon: Heart, path: "/liked" },
   { label: "History", icon: History, path: "/history" },
@@ -36,8 +34,6 @@ const communicationLinks = [
 
 const hubLinks = [
   { label: "My Profile", icon: User, path: "/profile" },
-  { label: "My Articles", icon: FileText, path: "/articles" },
-  { label: "Drafts", icon: Edit3, path: "/drafts", badge: 2 },
   { label: "Settings", icon: Settings, path: "/settings" },
 ];
 

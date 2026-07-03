@@ -14,6 +14,8 @@ public record AuthResponse(
 
         String email,
 
+        String profileImage,
+
         RoleEntity roleEntity
 
 ) {

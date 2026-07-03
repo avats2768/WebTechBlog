@@ -20,15 +20,16 @@ const authSlice = createSlice({
       state.token = action.payload.token;
       state.isAuthenticated = true;
 
-      localStorage.setItem(
-        "user",
-        JSON.stringify(action.payload.user)
-      );
+      localStorage.setItem("user", JSON.stringify(action.payload.user));
 
-      localStorage.setItem(
-        "token",
-        action.payload.token
-      );
+      localStorage.setItem("token", action.payload.token);
+    },
+
+    // inside your slice's `reducers: { ... }`
+    setProfileImage: (state, action) => {
+      if (state.user) {
+        state.user.profileImage = action.payload;
+      }
     },
 
     logout: (state) => {
@@ -42,9 +43,6 @@ const authSlice = createSlice({
   },
 });
 
-export const {
-  loginSuccess,
-  logout,
-} = authSlice.actions;
+export const { loginSuccess, logout, setProfileImage } = authSlice.actions;
 
 export default authSlice.reducer;

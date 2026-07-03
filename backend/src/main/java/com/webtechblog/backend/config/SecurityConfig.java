@@ -62,6 +62,10 @@ public class SecurityConfig {
                                 "/admin/**"
                         ).hasRole("ADMIN")
 
+                        .requestMatchers(
+                                "/ws/**"
+                        ).permitAll()
+
                         .anyRequest()
                         .authenticated()
                 )
