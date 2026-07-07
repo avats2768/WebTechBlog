@@ -1,10 +1,12 @@
 package com.webtechblog.backend.config.websocket;
 
+import com.webtechblog.backend.dto.chat.StatusResponse;
 import com.webtechblog.backend.entity.chat.ChatUserStatusEntity;
 import com.webtechblog.backend.repository.UserRepository;
 import com.webtechblog.backend.repository.chat.ChatUserStatusRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -18,7 +20,7 @@ import java.time.LocalDateTime;
 public class WebSocketEventListener {
 
     private final ChatUserStatusRepository chatUserStatusRepository;
-
+    private final SimpMessagingTemplate messagingTemplate;
     private final UserRepository userRepository;
 
     @EventListener
@@ -73,6 +75,16 @@ public class WebSocketEventListener {
 
             chatUserStatusRepository.save(status);
 
+
+            messagingTemplate.convertAndSend(
+                    "/topic/status",
+                    new StatusResponse(
+                            user.getUuid(),
+                            true
+                    )
+            );
+
+
         });
 
     }
@@ -110,6 +122,14 @@ public class WebSocketEventListener {
 
                         chatUserStatusRepository
                                 .save(status);
+
+                        messagingTemplate.convertAndSend(
+                                "/topic/status",
+                                new StatusResponse(
+                                        user.getUuid(),
+                                        false
+                                )
+                        );
 
                     });
 

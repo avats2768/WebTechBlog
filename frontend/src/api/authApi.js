@@ -8,3 +8,18 @@ export const registerApi = (data) =>
 
 export const profileApi = () =>
   api.get("/user/profile");
+
+export const updatePassword = async (oldPassword, newPassword) => {
+  const response = await api.put(
+    "/user/update-password",
+    null,
+    {
+      params: {
+        oldPassword,
+        newPassword,
+      },
+    }
+  );
+
+  return response.data;
+};

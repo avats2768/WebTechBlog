@@ -17,6 +17,7 @@ import HistoryPage from "../pages/history/History";
 import PublicProfilePage from "../pages/profile/PublicUserProfile";
 import ChatPage from "../pages/chat/ChatPage";
 import ChatList from "../pages/chat/ChatList";
+import Settings from "../pages/settings/Settings";
 
 export default function AppRoutes() {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -120,6 +121,8 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      <Route path="/settings" element={<Settings />} />
 
       <Route path="/theme-demo" element={<ThemeDemo />} />
       <Route path="/post/:id" element={<OpenPost />} />

@@ -1,5 +1,8 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import AppLogo from "../../assets/logo/app-logo.svg";
+import { disconnectChatSocket } from "../../socket/chatSocket";
+import { logout } from "../../features/auth/authSlice"; // adjust path if needed
 import {
   Home,
   Compass,
@@ -15,6 +18,7 @@ import {
   Edit3,
   Settings,
   Crown,
+  LogOut,
   X,
 } from "lucide-react";
 
@@ -26,8 +30,10 @@ const mainLinks = [
   { label: "History", icon: History, path: "/history" },
 ];
 
+// Messages badge is no longer hardcoded here — it's merged in at render
+// time from the live unread count in redux (state.chat.unreadCount).
 const communicationLinks = [
-  { label: "Messages", icon: Mail, path: "/messages", badge: 5 },
+  { label: "Messages", icon: Mail, path: "/messages" },
   { label: "Notifications", icon: Bell, path: "/notifications", badge: 3 },
   { label: "Video Calls", icon: Video, path: "/video", tag: "New" },
 ];
@@ -36,6 +42,11 @@ const hubLinks = [
   { label: "My Profile", icon: User, path: "/profile" },
   { label: "Settings", icon: Settings, path: "/settings" },
 ];
+
+// Caps the badge at "99+" so a big unread count doesn't blow out the pill.
+function formatBadgeCount(count) {
+  return count > 99 ? "99+" : String(count);
+}
 
 function NavItem({ label, icon: Icon, path, badge, tag, onNavigate }) {
   const navigate = useNavigate();
@@ -72,6 +83,29 @@ function NavItem({ label, icon: Icon, path, badge, tag, onNavigate }) {
 
 export default function SideNav({ isOpen = false, onClose = () => {} }) {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  // Live unread messages count, kept in sync in real time by
+  // useUnreadMessagesSocket (mounted once near the app root).
+  const unreadMessagesCount = useSelector(
+    (state) => state.chat?.unreadCount ?? 0
+  );
+
+  const communicationLinksWithLiveData = communicationLinks.map((link) =>
+    link.label === "Messages"
+      ? {
+          ...link,
+          badge: unreadMessagesCount > 0 ? formatBadgeCount(unreadMessagesCount) : null,
+        }
+      : link
+  );
+
+  function handleLogout() {
+    dispatch(logout());
+    disconnectChatSocket();
+    onClose();
+    navigate("/login");
+  }
 
   const content = (
     <>
@@ -113,7 +147,7 @@ export default function SideNav({ isOpen = false, onClose = () => {} }) {
         Communication
       </p>
       <nav className="flex flex-col gap-1">
-        {communicationLinks.map((link) => (
+        {communicationLinksWithLiveData.map((link) => (
           <NavItem key={link.label} {...link} onNavigate={onClose} />
         ))}
       </nav>
@@ -129,6 +163,22 @@ export default function SideNav({ isOpen = false, onClose = () => {} }) {
         {hubLinks.map((link) => (
           <NavItem key={link.label} {...link} onNavigate={onClose} />
         ))}
+
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors text-red-600"
+          style={{ borderRadius: "var(--radius-md)", fontWeight: 500 }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--surface)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "transparent";
+          }}
+        >
+          <LogOut size={18} />
+          <span className="flex-1 text-left">Log out</span>
+        </button>
       </nav>
 
       {/* Premium card */}

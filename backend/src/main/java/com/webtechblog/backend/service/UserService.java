@@ -7,4 +7,6 @@ public interface UserService {
     UserResponse getProfile(
             String email
     );
+
+    void updatePassword(String oldPassword,String newPassword);
 }

@@ -19,6 +19,8 @@ public class ChatMessageResponse {
 
     private String senderUuid;
 
+    private long senderId;
+
     private String receiverUuid;
 
     private String message;

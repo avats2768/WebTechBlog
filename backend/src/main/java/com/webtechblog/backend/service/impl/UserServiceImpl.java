@@ -7,6 +7,9 @@ import com.webtechblog.backend.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,6 +18,7 @@ public class UserServiceImpl
         implements UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public UserResponse getProfile(
@@ -40,5 +44,39 @@ public class UserServiceImpl
                 user.getStatus(),
                 user.getCreatedAt()
         );
+    }
+
+    @Override
+    public void updatePassword(String oldPassword, String newPassword) {
+
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        String email = authentication.getName();
+
+        UserEntity user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException("User not found"));
+
+        // Verify old password
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new IllegalArgumentException("Old password is incorrect.");
+        }
+
+        // Prevent same password
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new IllegalArgumentException(
+                    "New password cannot be the same as the old password."
+            );
+        }
+
+        // Encode new password
+        user.setPassword(passwordEncoder.encode(newPassword));
+
+        userRepository.save(user);
     }
 }

@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, MessageSquare } from "lucide-react";
 import HomeLayout from "../../layouts/HomeLayout";
+import { useDispatch } from "react-redux";
 import { getMyChats } from "../../api/chatApi";
+import { onChatStatus } from "../../socket/chatSocket";
+import { setChatsMeta } from "../../features/chat/chatSlice";
 
 /* Avatar with graceful fallback to initials, same pattern as TopNav */
 function ChatAvatar({ src, name }) {
@@ -45,13 +48,29 @@ function ChatSkeleton() {
 
 export default function ChatList() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [loading, setLoading] = useState(true);
   const [chats, setChats] = useState([]);
   const [query, setQuery] = useState("");
 
-  useEffect(() => {
+useEffect(() => {
     loadChats();
+
+    const unsubscribe = onChatStatus((status) => {
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.userUuid === status.userUuid
+            ? { ...chat, online: status.online }
+            : chat
+        )
+      );
+    });
+
+    return () => {
+      unsubscribe();
+      // No disconnectChatSocket() here either.
+    };
   }, []);
 
   const loadChats = async () => {
@@ -59,6 +78,7 @@ export default function ChatList() {
       setLoading(true);
       const data = await getMyChats();
       setChats(data);
+      dispatch(setChatsMeta(data));
     } catch (error) {
       console.error(error);
     } finally {
@@ -80,7 +100,6 @@ export default function ChatList() {
     <HomeLayout>
       <style>{`
         .chat-page {
-          max-width: 700px;
           margin: 0 auto;
           padding: 24px 16px 40px;
         }

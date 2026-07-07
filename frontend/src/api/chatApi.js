@@ -61,3 +61,7 @@ export const createPrivateChat = async (
     return response.data;
 
 };
+
+export const getTotalUnreadMessage=async()=>{
+  return await api.get("/chat/total-unread-count")
+}

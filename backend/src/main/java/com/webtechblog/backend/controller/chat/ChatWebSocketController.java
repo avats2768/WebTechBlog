@@ -1,6 +1,5 @@
 package com.webtechblog.backend.controller.chat;
 
-import com.webtechblog.backend.dto.chat.ChatMessageResponse;
 import com.webtechblog.backend.dto.chat.SendMessageRequest;
 import com.webtechblog.backend.entity.UserEntity;
 import com.webtechblog.backend.repository.UserRepository;

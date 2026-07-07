@@ -8,12 +8,12 @@ import com.webtechblog.backend.entity.chat.ChatMessageEntity;
 import com.webtechblog.backend.entity.chat.ChatRoomEntity;
 import com.webtechblog.backend.entity.chat.ChatRoomParticipantEntity;
 import com.webtechblog.backend.entity.chat.ChatUserStatusEntity;
-import com.webtechblog.backend.enums.chat.MessageStatus;
 import com.webtechblog.backend.repository.UserRepository;
 import com.webtechblog.backend.repository.chat.ChatRoomParticipantRepository;
 import com.webtechblog.backend.repository.chat.ChatRoomRepository;
 import com.webtechblog.backend.repository.chat.ChatUserStatusRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +35,12 @@ public class ChatService {
     private final ChatUserStatusService chatUserStatusService;
     private final SimpMessagingTemplate messagingTemplate;
     private final UserRepository userRepository;
+
+    @Value("${server.servlet.context-path}")
+    private String contextPath;
+
+    @Value("${app.base-url}")
+    private String baseUrl;
 
     /**
      * Send Message
@@ -86,6 +92,7 @@ public class ChatService {
                         .uuid(message.getUuid())
                         .roomUuid(room.getUuid())
                         .senderUuid(sender.getUuid())
+                        .senderId(sender.getId())
                         .receiverUuid(receiver.getUuid())
                         .message(message.getMessage())
                         .messageType(message.getMessageType())
@@ -166,9 +173,18 @@ public class ChatService {
                         messageUuid
                 );
 
-        chatReadService.markRead(
-                message
-        );
+        List<ChatMessageEntity> messages =
+                chatMessageService.getMessages(room.getId());
+
+        for (ChatMessageEntity msg : messages) {
+
+            if (!msg.getSenderId().equals(user.getId())) {
+
+                chatReadService.markRead(msg);
+
+            }
+
+        }
 
         chatReadService.resetUnreadCount(
                 room.getId(),
@@ -236,7 +252,7 @@ public class ChatService {
 
                             .username(otherUser.getUsername())
 
-                            .profileImage(otherUser.getProfileImage())
+                            .profileImage(baseUrl+contextPath+otherUser.getProfileImage())
 
                             .online(
                                     status != null &&

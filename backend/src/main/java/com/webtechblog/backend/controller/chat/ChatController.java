@@ -1,10 +1,12 @@
 package com.webtechblog.backend.controller.chat;
 
+import com.webtechblog.backend.dto.ApiResponse;
 import com.webtechblog.backend.dto.chat.ChatRoomResponse;
 import com.webtechblog.backend.dto.chat.CreatePrivateChatRequest;
 import com.webtechblog.backend.entity.UserEntity;
 import com.webtechblog.backend.entity.chat.ChatMessageEntity;
 import com.webtechblog.backend.repository.UserRepository;
+import com.webtechblog.backend.service.chat.ChatReadService;
 import com.webtechblog.backend.service.chat.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -18,7 +20,7 @@ import java.util.List;
 public class ChatController {
 
     private final ChatService chatService;
-
+    private final ChatReadService chatReadService;
     private final UserRepository userRepository;
 
     @GetMapping("/history/{roomUuid}")
@@ -107,6 +109,15 @@ public class ChatController {
                 request.getReceiverUuid()
         );
 
+    }
+
+    @GetMapping("/total-unread-count")
+    public ApiResponse<?> getTotalUnreadCount(){
+        return ApiResponse.builder()
+                .data(chatReadService.totalUnreadCount())
+                .message("Total unread count fetch successfully")
+                .success(true)
+                .build();
     }
 
 }
