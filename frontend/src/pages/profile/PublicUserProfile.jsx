@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   MapPin,
   BadgeCheck,
@@ -10,6 +10,7 @@ import {
   Globe,
   Link,
   Phone,
+  Video,
   MessageSquare,
 } from "lucide-react";
 import HomeLayout from "../../layouts/HomeLayout";
@@ -17,15 +18,18 @@ import { getUserProfile } from "../../api/userApi";
 import { getUserPosts } from "../../api/postsApi";
 import PostCard from "../../components/PostCard";
 import { createPrivateChat } from "../../api/chatApi";
-import { useNavigate } from "react-router-dom";
+import { useToast } from "../../context/ToastContext";
 
 export default function PublicProfilePage() {
   const { uuid } = useParams();
-const navigate = useNavigate();
+  const navigate = useNavigate();
+  const toast = useToast();
+
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingPosts, setLoadingPosts] = useState(true);
+  const [startingCall, setStartingCall] = useState(null); // 'audio-call' | 'video-call' | null
 
   useEffect(() => {
     fetchProfile();
@@ -61,25 +65,33 @@ const navigate = useNavigate();
   }
 
   const handleMessage = async () => {
+    try {
+      const room = await createPrivateChat(profile.uuid);
+      navigate("/chat", { state: room });
+    } catch (error) {
+      console.error(error);
+      toast.error("Could not open chat. Please try again.");
+    }
+  };
 
-  try {
+  // Gets/creates the private chat room, then hands off to ChatPage with a
+  // flag telling it to start the call automatically on arrival — the
+  // call itself (WebRTC + signaling) is scoped to a room, and ChatPage
+  // already owns all of that machinery, so we don't duplicate it here.
+  const handleCall = async (type) => {
+    if (startingCall) return; // avoid double-taps while the room is being created
 
-    const room =
-      await createPrivateChat(
-        profile.uuid
-      );
-
-    navigate("/chat", {
-      state: room,
-    });
-
-  } catch (error) {
-
-    console.error(error);
-
-  }
-
-};
+    setStartingCall(type);
+    try {
+      const room = await createPrivateChat(profile.uuid);
+      navigate("/chat", { state: { ...room, autoStartCall: type } });
+    } catch (error) {
+      console.error(error);
+      toast.error("Could not start the call. Please try again.");
+    } finally {
+      setStartingCall(null);
+    }
+  };
 
   if (loadingProfile || !profile) {
     return (
@@ -162,15 +174,30 @@ const navigate = useNavigate();
 
           <div className="profile-edit-btn" style={{ display: "flex", gap: 8 }}>
             <button
-    className="btn btn-primary"
-    type="button"
-    onClick={handleMessage}
->
-    <MessageSquare size={14} />
-    Message
-</button>
-            <button className="btn btn-success" type="button">
-              <Phone size={14} /> Call
+              className="btn btn-primary"
+              type="button"
+              onClick={handleMessage}
+            >
+              <MessageSquare size={14} />
+              Message
+            </button>
+            <button
+              className="btn btn-success"
+              type="button"
+              onClick={() => handleCall("audio-call")}
+              disabled={startingCall === "audio-call"}
+            >
+              <Phone size={14} />
+              {startingCall === "audio-call" ? "Calling…" : "Call"}
+            </button>
+            <button
+              className="btn btn-outline"
+              type="button"
+              onClick={() => handleCall("video-call")}
+              disabled={startingCall === "video-call"}
+            >
+              <Video size={14} />
+              {startingCall === "video-call" ? "Calling…" : "Video"}
             </button>
           </div>
         </div>
@@ -216,7 +243,7 @@ const navigate = useNavigate();
             {profile.githubUrl && (
               <span className="body-sm profile-meta-item">
                 <Globe size={14} />{" "}
-                <a
+                <a 
                   href={profile.githubUrl}
                   target="_blank"
                   rel="noreferrer"
