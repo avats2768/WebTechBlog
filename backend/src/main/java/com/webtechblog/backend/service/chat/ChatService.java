@@ -15,9 +15,12 @@ import com.webtechblog.backend.repository.chat.ChatUserStatusRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -125,13 +128,42 @@ public class ChatService {
             String roomUuid
     ) {
 
-        ChatRoomEntity room =
-                chatRoomService.getRoomByUuid(
-                        roomUuid
-                );
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
 
-        return chatMessageService.getMessages(
-                room.getId()
+        String email = authentication.getName();
+
+        UserEntity user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException("User not found"));
+
+        ChatRoomEntity room =
+                chatRoomService.getRoomByUuid(roomUuid);
+
+        ChatRoomParticipantEntity participant =
+                participantRepository
+                        .findByRoomIdAndUserId(
+                                room.getId(),
+                                user.getId()
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException("Participant not found"));
+
+        if (participant.getClearedAt() == null) {
+
+            return chatMessageService.getMessages(
+                    room.getId()
+            );
+
+        }
+
+        return chatMessageService.getMessagesAfter(
+                room.getId(),
+                participant.getClearedAt()
         );
 
     }
@@ -362,6 +394,48 @@ public class ChatService {
                 )
 
                 .build();
+
+    }
+
+    @Transactional
+    public void clearChat(
+            String roomUuid
+    ) {
+
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        String email =
+                authentication.getName();
+
+        UserEntity user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException("User not found"));
+
+        ChatRoomEntity room =
+                chatRoomService
+                        .getRoomByUuid(roomUuid);
+
+        ChatRoomParticipantEntity participant =
+                participantRepository
+                        .findByRoomIdAndUserId(
+                                room.getId(),
+                                user.getId()
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException("Participant not found"));
+
+        participant.setClearedAt(
+                LocalDateTime.now()
+        );
+
+        participantRepository.save(
+                participant
+        );
 
     }
 

@@ -73,4 +73,7 @@ public class ChatRoomParticipantEntity {
 
         this.updatedAt = LocalDateTime.now();
     }
+
+    @Column(name = "cleared_at")
+    private LocalDateTime clearedAt;
 }

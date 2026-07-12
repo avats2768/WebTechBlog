@@ -14,7 +14,7 @@ import HomeLayout from "../../layouts/HomeLayout";
 import { useSelector } from "react-redux";
 
 import { onChatMessage, sendMessage } from "../../socket/chatSocket";
-import { getChatHistory, markMessageAsRead } from "../../api/chatApi";
+import { getChatHistory, markMessageAsRead, clearChat } from "../../api/chatApi";
 import { getRoomCallHistory } from "../../api/callApi";
 import { useConfirm } from "../../context/ConfirmContext";
 
@@ -175,14 +175,31 @@ export default function ChatPage() {
       confirmLabel: "Clear Chat",
       variant: "danger",
     });
-    if (ok) clearChat();
+    if (ok) {
+
+    await handleClearChat();
+
+}
   };
 
-  const clearChat = () => {
-    // Hook up to your real "clear chat" API here, e.g.:
-    // await clearChatHistory(chat.roomUuid)
-    setMessages([]);
-  };
+  const handleClearChat = async () => {
+
+  try {
+
+    await clearChat(chat.roomUuid);
+
+    // setMessages([]);
+
+    // Optional
+    await loadHistory();
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
+
+};
 
   const openCallHistory = async () => {
     setMenuOpen(false);

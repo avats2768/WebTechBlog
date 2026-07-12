@@ -65,3 +65,14 @@ export const createPrivateChat = async (
 export const getTotalUnreadMessage=async()=>{
   return await api.get("/chat/total-unread-count")
 }
+
+export const clearChat = async (roomUuid) => {
+
+    const response =
+        await api.put(
+            `/chat/clear/${roomUuid}`
+        );
+
+    return response.data;
+
+};

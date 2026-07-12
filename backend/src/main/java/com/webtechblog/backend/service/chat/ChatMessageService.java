@@ -143,6 +143,19 @@
                     );
     
         }
+
+        public List<ChatMessageEntity> getMessagesAfter(
+                Long roomId,
+                LocalDateTime clearedAt
+        ) {
+
+            return chatMessageRepository
+                    .findByRoomIdAndCreatedAtAfterOrderByCreatedAt(
+                            roomId,
+                            clearedAt
+                    );
+
+        }
     
         /**
          * Delete Message

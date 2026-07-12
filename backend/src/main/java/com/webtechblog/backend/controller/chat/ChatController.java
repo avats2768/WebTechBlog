@@ -120,4 +120,20 @@ public class ChatController {
                 .build();
     }
 
+    @PutMapping("/clear/{roomUuid}")
+    public ApiResponse<?> clearChat(
+            @PathVariable String roomUuid
+    ) {
+
+        chatService.clearChat(
+                roomUuid
+        );
+
+        return ApiResponse.builder()
+                .success(true)
+                .message("Chat cleared successfully.")
+                .build();
+
+    }
+
 }
