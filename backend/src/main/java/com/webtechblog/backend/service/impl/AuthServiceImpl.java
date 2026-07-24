@@ -89,6 +89,10 @@ public class AuthServiceImpl
     @Transactional
     public AuthResponse register(RegisterRequest request) {
 
+        if (userRepository.existsByUsername(request.username())) {
+            throw new RuntimeException("Username already exists");
+        }
+
         if (userRepository.existsByEmail(request.email())) {
             throw new RuntimeException("Email already exists");
         }
