@@ -4,13 +4,10 @@ import { User, Mail, Lock } from "lucide-react";
 
 import { registerApi } from "../../api/authApi";
 
-import { useDispatch } from "react-redux";
-import { loginSuccess } from "../../features/auth/authSlice";
 import AuthLayout, { AuthField } from "../../layouts/AuthLayout"; // adjust path if needed
 
 export default function Register() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
   const [form, setForm] = useState({
     username: "",
@@ -21,6 +18,7 @@ export default function Register() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const handleChange = (e) => {
     setError("");
@@ -32,34 +30,43 @@ export default function Register() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
+    setError("");
+    setSuccess("");
 
-      const { data } = await registerApi(form);
+    await registerApi(form);
 
-      dispatch(
-        loginSuccess({
-          token: data.token,
-          user: {
-            uuid: data.uuid,
-            userId: data.userId,
-            username: data.username,
-            email: data.email,
-            profileImage:data.profileImage,
-            role: data.role,
-          },
-        }),
-      );
+    setSuccess(
+      "Registration successful! We've sent a verification email to your inbox. Please verify your email before logging in."
+    );
 
-      navigate("/dashboard");
-    } catch (err) {
-      setError(err.response?.data?.message || "Registration failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+    setForm({
+      username: "",
+      email: "",
+      password: "",
+      role: "USER",
+    });
+
+    setTimeout(() => {
+      navigate("/login");
+    }, 5000);
+
+  } catch (err) {
+
+    setError(
+      err.response?.data?.message ||
+      "Registration failed"
+    );
+
+  } finally {
+
+    setLoading(false);
+
+  }
+};
 
   return (
     <AuthLayout
@@ -79,6 +86,22 @@ export default function Register() {
           {error}
         </div>
       )}
+
+      {success && (
+  <div
+    className="alert alert-success"
+    style={{
+      marginBottom: 16,
+      background: "#dcfce7",
+      color: "#166534",
+      border: "1px solid #86efac",
+      padding: "12px",
+      borderRadius: "8px",
+    }}
+  >
+    {success}
+  </div>
+)}
 
       <form onSubmit={handleSubmit}>
         <AuthField

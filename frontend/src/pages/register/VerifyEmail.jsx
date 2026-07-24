@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import axios from "axios";
+import AuthLayout from "../../layouts/AuthLayout";
 
-const VerifyEmail = () => {
+export default function VerifyEmail() {
 
     const [searchParams] = useSearchParams();
-
     const navigate = useNavigate();
 
     const [loading, setLoading] = useState(true);
+    const [success, setSuccess] = useState(false);
     const [message, setMessage] = useState("");
 
     useEffect(() => {
@@ -16,34 +17,33 @@ const VerifyEmail = () => {
         const token = searchParams.get("token");
 
         if (!token) {
-            setMessage("Invalid verification link.");
             setLoading(false);
+            setSuccess(false);
+            setMessage("Invalid verification link.");
             return;
         }
 
-        verify(token);
+        verifyEmail(token);
 
     }, []);
 
-    const verify = async (token) => {
+    const verifyEmail = async (token) => {
 
         try {
 
-            const response = await axios.get(
-                `/auth/verify-email?token=${token}`
+            const { data } = await axios.get(
+                `http://localhost:8080/api/v1/auth/verify-email?token=${token}`
             );
 
-            setMessage(response.data.message);
+            setSuccess(true);
+            setMessage(data.message);
 
-            setTimeout(() => {
-                navigate("/login");
-            }, 3000);
+        } catch (err) {
 
-        } catch (error) {
-
+            setSuccess(false);
             setMessage(
-                error.response?.data?.message ||
-                "Verification failed."
+                err.response?.data?.message ||
+                "Unable to verify your email."
             );
 
         } finally {
@@ -56,39 +56,92 @@ const VerifyEmail = () => {
 
     return (
 
-        <div
-            style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                minHeight: "100vh"
-            }}
+        <AuthLayout
+            title="Email Verification"
+            subtitle="Verifying your account..."
         >
 
-            <div
-                style={{
-                    width: "420px",
-                    padding: "30px",
-                    borderRadius: "12px",
-                    background: "#fff",
-                    boxShadow: "0 0 20px rgba(0,0,0,.1)"
-                }}
-            >
+            {loading && (
 
-                <h2>Email Verification</h2>
+                <div className="text-center">
 
-                {
-                    loading
-                        ? <p>Verifying your email...</p>
-                        : <p>{message}</p>
-                }
+                    <h3>Verifying...</h3>
 
-            </div>
+                    <p>Please wait while we verify your email.</p>
 
-        </div>
+                </div>
+
+            )}
+
+            {!loading && success && (
+
+                <div className="text-center">
+
+                    <div
+                        style={{
+                            fontSize: 70,
+                            color: "#22c55e",
+                            marginBottom: 20
+                        }}
+                    >
+                        ✓
+                    </div>
+
+                    <h2>Email Verified</h2>
+
+                    <p style={{ marginTop: 10 }}>
+                        {message}
+                    </p>
+
+                    <button
+                        className="btn btn-primary"
+                        style={{ marginTop: 25 }}
+                        onClick={() => navigate("/login")}
+                    >
+                        Login Now
+                    </button>
+
+                </div>
+
+            )}
+
+            {!loading && !success && (
+
+                <div className="text-center">
+
+                    <div
+                        style={{
+                            fontSize: 70,
+                            color: "#ef4444",
+                            marginBottom: 20
+                        }}
+                    >
+                        ✕
+                    </div>
+
+                    <h2>Verification Failed</h2>
+
+                    <p style={{ marginTop: 10 }}>
+                        {message}
+                    </p>
+
+                    <Link
+                        to="/resend-verification"
+                        className="btn btn-primary"
+                        style={{
+                            display: "inline-block",
+                            marginTop: 25
+                        }}
+                    >
+                        Resend Verification Email
+                    </Link>
+
+                </div>
+
+            )}
+
+        </AuthLayout>
 
     );
 
-};
-
-export default VerifyEmail;
+}

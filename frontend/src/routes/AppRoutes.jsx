@@ -21,6 +21,7 @@ import Settings from "../pages/settings/Settings";
 import CallHistoryPage from "../pages/call/CallHistory";
 import { AIResponsePage } from "../pages/ai/AiResponsePage";
 import VerifyEmail from "../pages/register/VerifyEmail";
+import ResendVerification from "../pages/register/ResendVerification";
 
 export default function AppRoutes() {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -146,6 +147,11 @@ export default function AppRoutes() {
       <Route
     path="/verify-email"
     element={<VerifyEmail/>}
+/>
+
+<Route
+    path="/resend-verification"
+    element={<ResendVerification />}
 />
 
       <Route path="/settings" element={<Settings />} />
