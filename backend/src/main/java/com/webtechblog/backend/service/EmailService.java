@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -31,7 +32,16 @@ public class EmailService {
      * account still gets created; the user can always get a new link
      * via POST /auth/resend-verification-email. We log loudly so it's
      * visible in the server logs/monitoring instead of silently lost.
+     *
+     * @Async: runs on a separate thread pool so the HTTP request thread
+     * for /auth/register or /auth/resend-verification-email returns
+     * immediately and never blocks waiting on an SMTP connection —
+     * this is what was causing the 502 (a hung SMTP call held the
+     * request thread open until the platform killed the container).
+     * Requires @EnableAsync on a @Configuration class / the main
+     * application class.
      */
+    @Async
     public void sendVerificationEmail(
             String to,
             String username,
