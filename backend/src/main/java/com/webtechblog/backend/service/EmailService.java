@@ -115,6 +115,8 @@ public class EmailService {
 
             mailSender.send(message);
 
+            log.info("Verification email sent to {} (from={})", to, fromEmail);
+
         } catch (Exception e) {
             // Catches MessagingException AND runtime failures like
             // MailSendException/MailAuthenticationException so a mail
