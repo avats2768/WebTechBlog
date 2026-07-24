@@ -23,3 +23,16 @@ export const updatePassword = async (oldPassword, newPassword) => {
 
   return response.data;
 };
+
+// Goes through the shared `api` instance so it always resolves against
+// VITE_TECH_API_URL (no hardcoded host) and axios handles URL-encoding
+// of the token query param for us.
+export const verifyEmailApi = (token) =>
+  api.get("/auth/verify-email", {
+    params: { token },
+  });
+
+export const resendVerificationApi = (email) =>
+  api.post("/auth/resend-verification-email", null, {
+    params: { email },
+  });

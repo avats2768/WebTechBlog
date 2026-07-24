@@ -18,9 +18,11 @@ export default function Login() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   const handleChange = (e) => {
     setError("");
+    setNeedsVerification(false);
 
     setForm((prev) => ({
       ...prev,
@@ -34,6 +36,7 @@ export default function Login() {
     try {
       setLoading(true);
       setError("");
+      setNeedsVerification(false);
 
       const { data } = await loginApi(form);
 
@@ -42,10 +45,10 @@ export default function Login() {
           token: data.token,
           user: {
             uuid: data.uuid,
-            userId:data.userId,
+            userId: data.userId,
             username: data.username,
             email: data.email,
-            profileImage : data.profileImage,
+            profileImage: data.profileImage,
             role: data.role,
           },
         })
@@ -53,10 +56,16 @@ export default function Login() {
 
       navigate("/dashboard");
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Login failed"
-      );
+      const serverMessage = err.response?.data?.message || "Login failed";
+
+      setError(serverMessage);
+
+      // Surface a direct path to resend the verification email when the
+      // backend rejects login because the account isn't verified yet,
+      // instead of leaving the user stuck on a generic error.
+      if (/verif/i.test(serverMessage)) {
+        setNeedsVerification(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -75,7 +84,19 @@ export default function Login() {
         </p>
       }
     >
-      {error && <div className="alert alert-danger" style={{ marginBottom: 16 }}>{error}</div>}
+      {error && (
+        <div className="alert alert-danger" style={{ marginBottom: 16 }}>
+          {error}
+          {needsVerification && (
+            <>
+              {" "}
+              <Link to="/resend-verification" style={{ fontWeight: 600 }}>
+                Resend verification email
+              </Link>
+            </>
+          )}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <AuthField

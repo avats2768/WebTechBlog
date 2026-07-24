@@ -15,10 +15,9 @@ import com.webtechblog.backend.service.AuthService;
 import com.webtechblog.backend.service.EmailService;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -36,6 +35,7 @@ public class AuthServiceImpl
     private final EmailService emailService;
 
     @Override
+    @Transactional
     public void verifyEmail(String token) {
 
         UserEntity user = userRepository
@@ -56,6 +56,7 @@ public class AuthServiceImpl
     }
 
     @Override
+    @Transactional
     public void resendVerificationEmail(String email) {
 
         UserEntity user = userRepository
@@ -75,6 +76,8 @@ public class AuthServiceImpl
 
         userRepository.save(user);
 
+        // Non-fatal: EmailService logs and swallows send failures so a
+        // flaky mail provider doesn't turn into a 400 here either.
         emailService.sendVerificationEmail(
                 user.getEmail(),
                 user.getUsername(),
@@ -83,6 +86,7 @@ public class AuthServiceImpl
     }
 
     @Override
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.email())) {
@@ -117,10 +121,11 @@ public class AuthServiceImpl
 
         profileRepository.save(profile);
 
-        /*
-         * Email sending will be added in the next step.
-         */
-
+        // sendVerificationEmail no longer throws on failure (see
+        // EmailService) — registration always completes and returns
+        // success even if the mail provider is temporarily unreachable.
+        // The user can always request a new link via
+        // POST /auth/resend-verification-email.
         emailService.sendVerificationEmail(
                 savedUser.getEmail(),
                 savedUser.getUsername(),
