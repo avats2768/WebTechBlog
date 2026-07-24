@@ -53,7 +53,7 @@ export function AIResponsePage() {
       id: nextId(),
       role: "ai",
       status: "done",
-      model: "Gemini",
+      model: "Aemini",
       timestamp: "Just now",
       content: "Ask me anything — I'll show my response here.",
     },
@@ -117,7 +117,7 @@ export function AIResponsePage() {
     setMessages((prev) => [
       ...prev,
       { id: userId, role: "user", content: message, timestamp: "Just now" },
-      { id: aiId, role: "ai", status: "loading", model: "Gemini", timestamp: "Just now", content: "" },
+      { id: aiId, role: "ai", status: "loading", model: "Aemini", timestamp: "Just now", content: "" },
     ]);
 
     runTurn(message, aiId);
@@ -141,7 +141,7 @@ export function AIResponsePage() {
     <HomeLayout>
       <div
         className="bg-background flex-column"
-        style={{ height: "100vh", width: "100%" }}
+        style={{ height: "92vh", width: "100%" }}
       >
         {/* ---- Scrollable message history, full width ---- */}
         <div
@@ -215,7 +215,7 @@ export function AIResponsePage() {
             <Sparkles size={16} style={{ opacity: 0.4, marginBottom: 10, flexShrink: 0 }} />
             <textarea
               ref={textareaRef}
-              placeholder="Message Gemini…"
+              placeholder="Message Aemini…"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
