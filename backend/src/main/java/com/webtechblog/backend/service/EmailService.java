@@ -1,5 +1,9 @@
 package com.webtechblog.backend.service;
 
+import jakarta.mail.Message;
+import jakarta.mail.Session;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -8,36 +12,55 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.ByteArrayOutputStream;
+import java.util.Base64;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
- * Sends transactional email via Brevo's HTTPS REST API
- * (https://api.brevo.com/v3/smtp/email) instead of raw SMTP.
+ * Sends transactional email via the Gmail API (HTTPS) authenticated with
+ * OAuth2, instead of raw SMTP.
  *
- * Why: Railway (and most PaaS free/hobby tiers) block outbound SMTP on
- * every port (587, 2525 were both confirmed blocked here — every attempt
- * failed with SocketTimeoutException). Outbound HTTPS (443) is not
- * blocked, so routing transactional email through Brevo's API instead
- * of JavaMailSender sidesteps the restriction entirely.
+ * Why: Railway blocks outbound SMTP on every port (587, 2525 both
+ * confirmed blocked — every attempt failed with SocketTimeoutException).
+ * The Gmail API is plain HTTPS (443), which is never blocked. Sending
+ * through Google's own API — as the real, OAuth-authorized Gmail account
+ * — also avoids the DKIM/DMARC "freemail sender" rejection that a
+ * third-party relay (e.g. Brevo) hits when the From address is a Gmail
+ * address it doesn't control: here Google itself is the one sending it,
+ * so there's nothing to spoof-detect.
+ *
+ * Setup: a one-time OAuth consent flow produces a long-lived refresh
+ * token (see project setup notes). That refresh token is exchanged here
+ * for a short-lived access token on every send, which is then used to
+ * call the Gmail API.
  */
 @Slf4j
 @Service
 public class EmailService {
 
-    private static final String BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+    private static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
+    private static final String SEND_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${brevo.api.key}")
-    private String brevoApiKey;
+    @Value("${google.oauth.client-id}")
+    private String clientId;
 
-    @Value("${spring.mail.username}")
+    @Value("${google.oauth.client-secret}")
+    private String clientSecret;
+
+    @Value("${google.oauth.refresh-token}")
+    private String refreshToken;
+
+    @Value("${gmail.sender.address}")
     private String fromEmail;
 
     @Value("${app.frontend-url}")
@@ -60,6 +83,73 @@ public class EmailService {
             String username,
             String token
     ) {
+
+        try {
+
+            String accessToken = fetchAccessToken();
+            String rawMessage = buildRawMimeMessage(to, username, token);
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("raw", rawMessage);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(accessToken);
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+
+            restTemplate.postForEntity(SEND_URL, request, String.class);
+
+            log.info("Verification email sent to {} via Gmail API (from={})", to, fromEmail);
+
+        } catch (HttpStatusCodeException e) {
+            HttpStatusCode status = e.getStatusCode();
+            log.error(
+                    "Gmail API rejected verification email to {} (status={}): {}",
+                    to, status, e.getResponseBodyAsString()
+            );
+        } catch (RestClientException e) {
+            log.error("Failed to reach Gmail API while sending verification email to {}: {}", to, e.getMessage(), e);
+        } catch (Exception e) {
+            // Catches MessagingException from MIME message construction,
+            // encoding errors, etc. — still never propagates.
+            log.error("Unexpected error building/sending verification email to {}: {}", to, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Exchanges the long-lived refresh token for a short-lived access
+     * token. Done on every send for simplicity (low volume — verification
+     * emails only); could be cached for ~50 minutes if send volume grows.
+     */
+    private String fetchAccessToken() {
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("client_id", clientId);
+        form.add("client_secret", clientSecret);
+        form.add("refresh_token", refreshToken);
+        form.add("grant_type", "refresh_token");
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(form, headers);
+
+        Map<?, ?> response = restTemplate.postForObject(TOKEN_URL, request, Map.class);
+
+        if (response == null || response.get("access_token") == null) {
+            throw new IllegalStateException("Google did not return an access_token");
+        }
+
+        return response.get("access_token").toString();
+    }
+
+    /**
+     * Builds an RFC 2822 email (via jakarta.mail's MimeMessage, used here
+     * purely as a local message builder — no SMTP transport involved),
+     * then base64url-encodes it the way the Gmail API requires.
+     */
+    private String buildRawMimeMessage(String to, String username, String token) throws Exception {
 
         String verificationLink = frontendUrl + "/verify-email?token=" + token;
 
@@ -113,44 +203,17 @@ public class EmailService {
                 </html>
                 """.formatted(username, verificationLink);
 
-        Map<String, Object> sender = new HashMap<>();
-        sender.put("name", "WebTechBlog");
-        sender.put("email", fromEmail);
+        Session session = Session.getDefaultInstance(new Properties(), null);
+        MimeMessage mimeMessage = new MimeMessage(session);
 
-        Map<String, Object> recipient = new HashMap<>();
-        recipient.put("email", to);
-        recipient.put("name", username);
+        mimeMessage.setFrom(new InternetAddress(fromEmail, "WebTechBlog"));
+        mimeMessage.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
+        mimeMessage.setSubject("Verify your WebTechBlog account", "UTF-8");
+        mimeMessage.setContent(html, "text/html; charset=UTF-8");
 
-        Map<String, Object> body = new HashMap<>();
-        body.put("sender", sender);
-        body.put("to", List.of(recipient));
-        body.put("subject", "Verify your WebTechBlog account");
-        body.put("htmlContent", html);
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        mimeMessage.writeTo(buffer);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("api-key", brevoApiKey);
-        headers.set("Accept", "application/json");
-
-        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
-
-        try {
-
-            restTemplate.postForEntity(BREVO_API_URL, request, String.class);
-
-            log.info("Verification email sent to {} via Brevo API (from={})", to, fromEmail);
-
-        } catch (HttpStatusCodeException e) {
-            // Brevo rejected the request (bad API key, unverified sender,
-            // invalid payload, etc). Response body has the exact reason.
-            HttpStatusCode status = e.getStatusCode();
-            log.error(
-                    "Brevo API rejected verification email to {} (status={}): {}",
-                    to, status, e.getResponseBodyAsString()
-            );
-        } catch (RestClientException e) {
-            // Network-level failure calling Brevo's API itself.
-            log.error("Failed to reach Brevo API while sending verification email to {}: {}", to, e.getMessage(), e);
-        }
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(buffer.toByteArray());
     }
 }
