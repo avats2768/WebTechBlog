@@ -71,7 +71,7 @@ export default function Register() {
   return (
     <AuthLayout
       title="Create your account"
-      subtitle="Join ConnectX in a few seconds."
+      subtitle="Join TechSocial in a few seconds."
       footer={
         <p className="body-sm">
           Already have an account?{" "}

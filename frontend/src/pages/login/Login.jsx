@@ -74,7 +74,7 @@ export default function Login() {
   return (
     <AuthLayout
       title="Welcome back"
-      subtitle="Log in to continue to ConnectX."
+      subtitle="Log in to continue to TechSocial."
       footer={
         <p className="body-sm">
           No account?{" "}

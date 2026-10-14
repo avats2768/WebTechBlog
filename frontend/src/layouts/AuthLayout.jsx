@@ -48,8 +48,8 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
         style={{ padding: "14px 24px", borderBottom: "1px solid var(--border)" }}
       >
         <div className="flex-center" style={{ justifyContent: "flex-start", gap: 10 }}>
-          <img src={Logo} alt="ConnectX logo" className="w-8 h-8" />
-          <span className="heading-md">ConnectX</span>
+          <img src={Logo} alt="TechSocial logo" className="w-8 h-8" />
+          <span className="heading-md">TechSocial</span>
         </div>
 
         <div className="hidden md:flex" style={{ gap: 28 }}>
@@ -114,7 +114,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
         className="flex-between"
         style={{ padding: "16px 24px", borderTop: "1px solid var(--border)", flexWrap: "wrap", gap: 12 }}
       >
-        <p className="body-sm">© {year} ConnectX. All rights reserved.</p>
+        <p className="body-sm">© {year} TechSocial. All rights reserved.</p>
 
         <div className="flex-center" style={{ gap: 20 }}>
           {FOOTER_LINKS.map((link) => (
