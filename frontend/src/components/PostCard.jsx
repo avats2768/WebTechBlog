@@ -48,6 +48,9 @@ import { useToast } from "../context/ToastContext";
 // Number of lines shown before the description is cut off
 const DESCRIPTION_MAX_LINES = 3;
 
+// Fixed height (px) for the post image. Width fills the card.
+const POST_IMAGE_HEIGHT = 320;
+
 export default function PostCard({
   post,
   onDeleted,
@@ -439,7 +442,7 @@ export default function PostCard({
           fetchPriority="low"
           alt={post.title}
           className="w-full rounded-lg mb-4 object-cover"
-          style={{ maxHeight: 320 }}
+          style={{ height: POST_IMAGE_HEIGHT, display: "block" }}
         />
       )}
 
