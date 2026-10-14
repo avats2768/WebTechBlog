@@ -1,7 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSelector } from "react-redux";
 import {
-  ArrowLeft,
   Heart,
   MessageCircle,
   Bookmark,
@@ -28,27 +27,27 @@ import { useToast } from "../context/ToastContext";
 /**
  * PostCard
  *
- * Renders a single post: back button, author header, three-dot menu
- * (Code / Edit / Delete), bookmark icon, title/description, optional image,
- * skill badges, like/comment/view stats footer, and a toggleable comment
- * thread (list + add-comment input).
+ * Renders a single post: author header, three-dot menu
+ * (Code / Edit / Delete), bookmark icon, title, a collapsible description
+ * (3 lines + "See more" / "See less"), optional image, skill badges,
+ * like/comment stats footer, and a toggleable comment thread.
  *
  * Props:
- * - post: the post object (uuid, username, profession, createdAt, title,
- *          description, imageUrl, skills, likeCount, commentCount, viewCount)
+ * - post: the post object (id, userUuid, firstName, lastName, designation,
+ *          profileImage, createdAt, title, description, imageUrl, skills,
+ *          likeCount, commentCount, isLiked, isBookmarked, code)
  * - onDeleted(): optional callback fired after a successful delete
- * - onBookmarkClick(post): optional callback when bookmark icon is clicked
- * - showBackButton: optional, defaults to true. Set false to hide it
- *          (e.g. when PostCard is rendered inside a feed/list).
- * - showEditDelete: optional, defaults to true. Set false to hide the
- *          "Edit Post" and "Delete" menu items, leaving only "Copy Code"
- *          (e.g. when PostCard is rendered in a feed where the viewer
- *          isn't necessarily the post owner, like the Dashboard).
- * - currentUserId: optional. If passed, only comments authored by this
- *          user show a delete icon. If omitted, delete icons are hidden
- *          entirely (safer default since the comments API doesn't return
- *          an author name to confirm ownership visually).
+ * - onBookmarkClick(post, bookmarked): optional callback when bookmark icon is clicked
+ * - showBackButton: kept for API compatibility (unused in this render)
+ * - showEditDelete: optional, defaults to false. Set true to show the
+ *          "Edit Post" and "Delete" menu items next to "Copy Code".
+ * - currentUserId: optional. Overrides the logged-in user id when deciding
+ *          which comments show a delete icon.
  */
+
+// Number of lines shown before the description is cut off
+const DESCRIPTION_MAX_LINES = 3;
+
 export default function PostCard({
   post,
   onDeleted,
@@ -78,17 +77,28 @@ export default function PostCard({
 
   const [commentCount, setCommentCount] = useState(post.commentCount);
 
+  // Description "See more" state
+  const [expanded, setExpanded] = useState(false);
+  const [isClamped, setIsClamped] = useState(false);
+  const descRef = useRef(null);
+
   useEffect(() => {
     setLiked(post.isLiked);
-
     setLikeCount(post.likeCount);
-
     setBookmarked(post.isBookmarked);
-
     setComments(post.comments || []);
-
     setCommentCount(post.commentCount);
+    setExpanded(false);
   }, [post]);
+
+  // Check whether the description is actually being cut off.
+  // Only measures while collapsed, so the button stays after expanding.
+  useEffect(() => {
+    const el = descRef.current;
+    if (el && !expanded) {
+      setIsClamped(el.scrollHeight > el.clientHeight + 1);
+    }
+  }, [post.description, expanded]);
 
   // close the menu when clicking anywhere else on the page
   useEffect(() => {
@@ -203,7 +213,6 @@ export default function PostCard({
 
       if (data.data) {
         setComments((prev) => [data.data, ...prev]);
-
         setCommentCount((prev) => prev + 1);
       } else {
         await loadComments();
@@ -231,7 +240,6 @@ export default function PostCard({
       const { data } = await deleteComment(commentId);
 
       setComments((prev) => prev.filter((c) => c.id !== commentId));
-
       setCommentCount((prev) => Math.max(prev - 1, 0));
 
       toast.success(data.message || "Comment deleted");
@@ -252,9 +260,6 @@ export default function PostCard({
     try {
       const { data } = await toggleBookmark(post.id);
 
-      console.log("data---->",data);
-      
-
       setBookmarked(data.bookmarked);
 
       onBookmarkClick?.(post, data.bookmarked);
@@ -269,6 +274,22 @@ export default function PostCard({
     e.stopPropagation();
     navigate(`/public-profile/${post.userUuid}`);
   };
+
+  const handleToggleDescription = (e) => {
+    e.stopPropagation(); // don't trigger the card's navigate-to-post click
+    setExpanded((prev) => !prev);
+  };
+
+  const descriptionStyle = expanded
+    ? { whiteSpace: "pre-wrap", overflowWrap: "anywhere" }
+    : {
+        display: "-webkit-box",
+        WebkitLineClamp: DESCRIPTION_MAX_LINES,
+        WebkitBoxOrient: "vertical",
+        overflow: "hidden",
+        whiteSpace: "pre-wrap",
+        overflowWrap: "anywhere",
+      };
 
   return (
     <article
@@ -384,9 +405,31 @@ export default function PostCard({
       <h2 className="heading-md" style={{ marginBottom: 8 }}>
         {post.title}
       </h2>
-      <p className="body-md" style={{ marginBottom: 12 }}>
-        {post.description}
-      </p>
+
+      {/* Description: clamped to 3 lines with See more / See less */}
+      <div style={{ marginBottom: 12 }}>
+        <p ref={descRef} className="body-md" style={descriptionStyle}>
+          {post.description}
+        </p>
+
+        {(isClamped || expanded) && (
+          <button
+            type="button"
+            onClick={handleToggleDescription}
+            className="text-sm font-semibold"
+            style={{
+              color: "var(--primary)",
+              background: "none",
+              border: "none",
+              padding: 0,
+              marginTop: 4,
+              cursor: "pointer",
+            }}
+          >
+            {expanded ? "See less" : "See more"}
+          </button>
+        )}
+      </div>
 
       {post.imageUrl && (
         <img
@@ -453,8 +496,7 @@ export default function PostCard({
         {/* <span className="body-sm">{post.viewCount} views</span> */}
       </div>
 
-      {/* Comment thread — only rendered once toggled open */}
-
+      {/* Comment input is always visible; the list shows once toggled open */}
       <div className="mt-4 border-t pt-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex gap-2">
           <input
